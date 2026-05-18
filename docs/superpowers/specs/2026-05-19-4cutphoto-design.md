@@ -11,9 +11,10 @@ The first version does not include login, cloud sync, or backup export/import. I
 - Open directly to scanning because capturing a new QR is the primary action.
 - Keep navigation lightweight with a floating expandable menu instead of bottom tabs.
 - Treat each QR result as one photo session.
+- Treat multiple QR results from the same day as separate sessions, even when they are saved minutes apart.
 - Apply person tags at the session level during save, then allow editing later from saved views.
 - Keep data local by default and avoid account requirements in the first version.
-- Use a modern, minimal sand-tone visual style with enough contrast and secondary accent colors.
+- Use a modern, minimal white-forward sand-tone visual style with enough contrast and refined secondary accent colors.
 
 ## Primary Navigation
 
@@ -52,16 +53,18 @@ The download flow is hybrid:
 5. In WebView fallback, allow the user to select downloadable photo/video links or trigger supported downloads.
 6. Send selected files into the same pre-save preview screen.
 
-When the user confirms the preview, the app creates one PhotoSession containing all downloaded media.
+When the user confirms the preview, the app creates one PhotoSession containing all downloaded media from that QR. A photo and video pair from one QR belongs to one session. A second photo and video pair from another QR on the same date belongs to another session.
 
 ### Calendar
 
-Calendar shows a simple monthly calendar. Dates with saved sessions display a small colored dot. Tapping a date shows the sessions from that date below the calendar.
+Calendar shows a simple monthly calendar. Dates with saved sessions display a small colored dot. Tapping a date shows every session from that date below the calendar. The selected date list must support multiple sessions from different photo booths or different QR scans on the same day.
 
 Each listed session shows:
 
 - Cover image or video thumbnail
 - Capture date/time
+- Session order for that date, such as "Session 1" and "Session 2"
+- Source hint when available, such as the QR host or recognized photo booth brand
 - Person tags
 - Media count or video indicator
 
@@ -69,7 +72,17 @@ Tapping a session opens session detail.
 
 ### Gallery
 
-Gallery is a chronological scroll view. Content is grouped by year and date with small text headings. Sessions appear below the date headings with their media previews.
+Gallery is a chronological scroll view. Content is grouped by year and date with small text headings. Sessions appear below the date headings as distinct session cards. This is important because users may take several four-cut photos on the same day, possibly at different photo booths. The gallery must remain readable when one date contains many sessions.
+
+Within a date group, each QR scan is shown as its own session card. For example, a first QR that contains photo 1 and video 1 is one session, while a second QR that contains photo 2 and video 2 is another session. Cards should not merge media across QR scans only because the date is the same.
+
+Long date groups should use a compact but polished layout:
+
+- Sticky or clearly repeated date headers when useful
+- Session cards with consistent cover aspect ratios
+- Small metadata rows for time, tags, source hint, and media count
+- Lazy loading with `LazyColumn` and stable item keys
+- Clear spacing between sessions without making the page feel heavy
 
 The top area includes person tag filtering. Searching or selecting a person tag filters the gallery to sessions that include that person.
 
@@ -80,6 +93,8 @@ Tapping a session opens session detail.
 Session detail shows:
 
 - Date at the top
+- Session title or order for that date
+- Source hint when available
 - Applied person tags
 - Media grid or pager for images and videos
 - Tag editing entry point
@@ -113,18 +128,20 @@ Tags are stored at the session level in the first version. The data model can la
 
 ## Visual Direction
 
-The UI uses a warm sand-tone foundation while avoiding a one-note beige palette.
+The UI uses a white-forward warm sand-tone foundation while avoiding a one-note beige palette. White and warm off-white should carry most large surfaces, with sand used as a soft supporting tone rather than the entire screen color.
 
 Suggested palette roles:
 
-- Background: warm off-white
-- Surface: light sand
+- Background: warm white or warm off-white
+- Surface: white and very light sand
 - Primary text: charcoal
 - Secondary text: warm gray
-- Accent: muted olive or clay
+- Accent: muted olive or clay, used sparingly
 - Warning/error: restrained red-brown
 
-The design should feel modern, minimal, quiet, and personal. Cards should be subtle with small radii. The scanner remains functional and uncluttered.
+The design should feel modern, minimal, quiet, and personal. The visual language should feel closer to a refined contemporary photo journal than a utility file manager. Cards should be subtle with small radii, low-contrast borders, and restrained shadows. The scanner remains functional and uncluttered.
+
+UX quality is a first-class requirement. The app should make dense days feel organized rather than crowded. Use strong hierarchy, compact metadata, smooth transitions, and clear touch targets. Avoid oversized decorative sections, heavy gradients, and UI that competes with the photos.
 
 ## Technical Architecture
 
@@ -173,6 +190,9 @@ Handles temporary downloads, final internal app storage, optional future export 
 - id
 - capturedAt
 - sourceQrUrl
+- sourceHost
+- sourceLabel
+- sessionIndexForDay
 - createdAt
 - updatedAt
 - coverMediaId
@@ -238,6 +258,7 @@ Initial tests should cover:
 - Session repository save flow.
 - DownloadResolver success and fallback behavior with controlled URL/content inputs.
 - Calendar date grouping.
+- Multiple same-day sessions staying separate in Calendar and Gallery.
 - Gallery tag filtering.
 
 Manual QA should cover:
@@ -251,6 +272,8 @@ Manual QA should cover:
 - Deleting a tag with confirmation.
 - Viewing saved sessions in Calendar.
 - Viewing and filtering saved sessions in Gallery.
+- Saving two QR scans on the same day and confirming they appear as two separate sessions.
+- Confirming a photo/video pair from one QR is not merged with another photo/video pair from a different QR.
 - Editing tags after save.
 
 ## Explicit Non-Goals For Version 1
@@ -262,4 +285,3 @@ Manual QA should cover:
 - Server-side scraping
 - Social sharing features
 - Per-media tags
-
