@@ -17,17 +17,32 @@ import com.fourcut.photo.feature.download.DownloadFlowScreen
 import com.fourcut.photo.feature.calendar.CalendarDayUiModel
 import com.fourcut.photo.feature.calendar.CalendarScreen
 import com.fourcut.photo.feature.calendar.CalendarSessionUiModel
+import com.fourcut.photo.feature.gallery.GalleryDateGroupUiModel
+import com.fourcut.photo.feature.gallery.GalleryScreen
+import com.fourcut.photo.feature.gallery.GallerySessionUiModel
 import com.fourcut.photo.feature.scan.ScanScreen
+import com.fourcut.photo.feature.session.SessionDetailScreen
 import com.fourcut.photo.navigation.AppDestination
 
 @Composable
 fun FourCutPhotoApp() {
     var currentDestination by remember { mutableStateOf(AppDestination.Scan) }
     var pendingQrUrl by remember { mutableStateOf<String?>(null) }
+    var galleryQuery by remember { mutableStateOf("") }
+    var selectedSessionId by remember { mutableStateOf<Long?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         val qrUrl = pendingQrUrl
-        if (qrUrl != null) {
+        val detailSessionId = selectedSessionId
+        if (detailSessionId != null) {
+            SessionDetailScreen(
+                dateLabel = "2026.05.19 · Session $detailSessionId",
+                tagNames = listOf("Hajin", "JungHyun"),
+                mediaPaths = listOf("photo_001.jpg", "video_001.mp4"),
+                onBack = { selectedSessionId = null },
+                onEditTags = {}
+            )
+        } else if (qrUrl != null) {
             DownloadFlowScreen(
                 sourceUrl = qrUrl,
                 onSaved = { pendingQrUrl = null },
@@ -72,9 +87,38 @@ fun FourCutPhotoApp() {
                     onSessionSelected = {}
                 )
 
-                AppDestination.Gallery -> Text(
-                    text = "Gallery",
-                    modifier = Modifier.align(Alignment.Center)
+                AppDestination.Gallery -> GalleryScreen(
+                    query = galleryQuery,
+                    onQueryChange = { galleryQuery = it },
+                    groups = listOf(
+                        GalleryDateGroupUiModel(
+                            yearLabel = "2026",
+                            dateLabel = "May 19",
+                            sessions = listOf(
+                                GallerySessionUiModel(
+                                    id = 1L,
+                                    sessionTitle = "Session 1",
+                                    timeLabel = "14:10",
+                                    sourceLabel = "Photo booth",
+                                    coverPath = null,
+                                    tagNames = listOf("Hajin", "JungHyun"),
+                                    hasVideo = true,
+                                    mediaSummary = "1 photo · 1 video"
+                                ),
+                                GallerySessionUiModel(
+                                    id = 2L,
+                                    sessionTitle = "Session 2",
+                                    timeLabel = "18:42",
+                                    sourceLabel = "Life4Cuts",
+                                    coverPath = null,
+                                    tagNames = listOf("Hajin"),
+                                    hasVideo = true,
+                                    mediaSummary = "1 photo · 1 video"
+                                )
+                            )
+                        )
+                    ),
+                    onSessionSelected = { selectedSessionId = it }
                 )
             }
         }
