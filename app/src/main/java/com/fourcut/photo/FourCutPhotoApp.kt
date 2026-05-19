@@ -36,6 +36,7 @@ import com.fourcut.photo.feature.gallery.GallerySessionUiModel
 import com.fourcut.photo.feature.gallery.GalleryGroupingInput
 import com.fourcut.photo.feature.gallery.buildGalleryDateGroups
 import com.fourcut.photo.feature.scan.ScanScreen
+import com.fourcut.photo.feature.session.SessionDetailMediaUiModel
 import com.fourcut.photo.feature.session.SessionDetailScreen
 import com.fourcut.photo.navigation.AppDestination
 import java.time.Instant
@@ -87,7 +88,13 @@ fun FourCutPhotoApp() {
                 sourceLabel = selectedSession.session.sourceLabel,
                 tagNames = selectedSession.tags.map { it.name },
                 suggestedTags = detailSuggestedTags,
-                mediaPaths = selectedSession.media.map { it.localPath },
+                media = selectedSession.media.map {
+                    SessionDetailMediaUiModel(
+                        path = it.localPath,
+                        mimeType = it.mimeType,
+                        fileName = it.fileName
+                    )
+                },
                 exportMessage = detailExportMessage,
                 onBack = { selectedSessionId = null },
                 onTagQueryChange = { detailTagQuery = it },
@@ -244,14 +251,17 @@ private fun SessionWithDetails.toGallerySessionUiModel(): GallerySessionUiModel 
         if (videoCount > 0) add("$videoCount video")
     }.joinToString(" · ")
 
+    val coverMedia = media.firstOrNull { it.id == session.coverMediaId } ?: media.firstOrNull()
+
     return GallerySessionUiModel(
         id = session.id,
         sessionTitle = "Session ${session.sessionIndexForDay}",
         timeLabel = timeFormatter.format(Instant.ofEpochMilli(session.capturedAt)),
         sourceLabel = session.sourceLabel,
-        coverPath = media.firstOrNull { it.id == session.coverMediaId }?.localPath ?: media.firstOrNull()?.localPath,
+        coverPath = coverMedia?.localPath,
         tagNames = tags.map { it.name },
         hasVideo = videoCount > 0,
-        mediaSummary = summary.ifBlank { "No media" }
+        mediaSummary = summary.ifBlank { "No media" },
+        coverMimeType = coverMedia?.mimeType
     )
 }

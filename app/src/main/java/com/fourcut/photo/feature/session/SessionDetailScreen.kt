@@ -35,6 +35,17 @@ import com.fourcut.photo.core.tag.addSelectedTag
 import com.fourcut.photo.core.tag.removeSelectedTag
 import coil.compose.AsyncImage
 
+data class SessionDetailMediaUiModel(
+    val path: String,
+    val mimeType: String,
+    val fileName: String
+) {
+    val isVideo: Boolean = mimeType.startsWith("video/")
+    val displayName: String = fileName.trim().ifBlank {
+        if (isVideo) "Video" else "Photo"
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SessionDetailScreen(
@@ -43,7 +54,7 @@ fun SessionDetailScreen(
     sourceLabel: String?,
     tagNames: List<String>,
     suggestedTags: List<String>,
-    mediaPaths: List<String>,
+    media: List<SessionDetailMediaUiModel>,
     exportMessage: String?,
     onBack: () -> Unit,
     onTagQueryChange: (String) -> Unit,
@@ -143,7 +154,7 @@ fun SessionDetailScreen(
                 }
                 TextButton(
                     onClick = onExportToGallery,
-                    enabled = mediaPaths.isNotEmpty()
+                    enabled = media.isNotEmpty()
                 ) {
                     Text("Save to device gallery")
                 }
@@ -162,8 +173,8 @@ fun SessionDetailScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(mediaPaths) { path ->
-                MediaTile(path)
+            items(media) { item ->
+                MediaTile(item)
             }
         }
     }
@@ -175,7 +186,7 @@ private fun MutableList<String>.replaceWith(tags: List<String>) {
 }
 
 @Composable
-private fun MediaTile(path: String) {
+private fun MediaTile(media: SessionDetailMediaUiModel) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -184,15 +195,30 @@ private fun MediaTile(path: String) {
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
-        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("/")) {
+        if (media.isVideo) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = "Video",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = media.displayName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else if (media.path.startsWith("http://") || media.path.startsWith("https://") || media.path.startsWith("/")) {
             AsyncImage(
-                model = path,
+                model = media.path,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize()
             )
         } else {
             Text(
-                text = path.ifBlank { "Media" },
+                text = media.displayName,
                 style = MaterialTheme.typography.bodySmall
             )
         }

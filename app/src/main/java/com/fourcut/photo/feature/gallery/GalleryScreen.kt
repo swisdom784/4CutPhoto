@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 
 data class GalleryDateGroupUiModel(
     val yearLabel: String,
@@ -37,8 +38,11 @@ data class GallerySessionUiModel(
     val coverPath: String?,
     val tagNames: List<String>,
     val hasVideo: Boolean,
-    val mediaSummary: String
-)
+    val mediaSummary: String,
+    val coverMimeType: String? = null
+) {
+    val hasImageCover: Boolean = !coverPath.isNullOrBlank() && coverMimeType?.startsWith("image/") == true
+}
 
 @Composable
 fun GalleryScreen(
@@ -169,10 +173,19 @@ private fun GallerySessionCard(
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = if (session.hasVideo) "Video" else "Photo",
-                    style = MaterialTheme.typography.labelMedium
-                )
+                val coverPath = session.coverPath
+                if (session.hasImageCover) {
+                    AsyncImage(
+                        model = coverPath,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(
+                        text = if (session.hasVideo) "Video" else "Photo",
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
             }
             Column(
                 modifier = Modifier.weight(0.66f),
