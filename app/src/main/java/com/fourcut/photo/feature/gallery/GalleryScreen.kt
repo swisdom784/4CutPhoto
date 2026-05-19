@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -44,10 +47,12 @@ data class GallerySessionUiModel(
     val hasImageCover: Boolean = !coverPath.isNullOrBlank() && coverMimeType?.startsWith("image/") == true
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GalleryScreen(
     query: String,
     onQueryChange: (String) -> Unit,
+    availableTagNames: List<String>,
     groups: List<GalleryDateGroupUiModel>,
     onSessionSelected: (Long) -> Unit,
     modifier: Modifier = Modifier
@@ -80,6 +85,25 @@ fun GalleryScreen(
                 singleLine = true,
                 placeholder = { Text("Search people") }
             )
+        }
+        val tagSuggestions = galleryTagSuggestions(
+            query = query,
+            tagNames = availableTagNames
+        )
+        if (tagSuggestions.isNotEmpty()) {
+            item {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    tagSuggestions.forEach { tagName ->
+                        SuggestionChip(
+                            onClick = { onQueryChange(tagName) },
+                            label = { Text(tagName) }
+                        )
+                    }
+                }
+            }
         }
         galleryEmptyState(query, groups.size)?.let { state ->
             item {

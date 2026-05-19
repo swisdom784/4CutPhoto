@@ -195,6 +195,7 @@ fun FourCutPhotoApp() {
                 AppDestination.Gallery -> GalleryScreen(
                     query = galleryQuery,
                     onQueryChange = { galleryQuery = it },
+                    availableTagNames = sessions.flatMap { session -> session.tags.map { it.name } },
                     groups = sessions
                         .filter { session ->
                             galleryQuery.isBlank() ||
