@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -35,8 +36,14 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.fourcut.photo.core.designsystem.component.PersonTagMiniPanel
 import com.fourcut.photo.core.download.DownloadResolver
 import com.fourcut.photo.core.download.DownloadResult
+import com.fourcut.photo.data.local.session.MediaType
+import com.fourcut.photo.data.repository.SaveMediaInput
+import com.fourcut.photo.data.repository.SessionRepository
+import com.fourcut.photo.data.repository.TagRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.net.URI
 
 sealed interface DownloadFlowUiState {
     data object Resolving : DownloadFlowUiState
@@ -55,13 +62,17 @@ data class PreviewMedia(
 @Composable
 fun DownloadFlowScreen(
     sourceUrl: String,
+    sessionRepository: SessionRepository,
+    tagRepository: TagRepository,
     onSaved: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var uiState by remember(sourceUrl) { mutableStateOf<DownloadFlowUiState>(DownloadFlowUiState.Resolving) }
     val selectedTags = remember { mutableStateListOf<String>() }
+    var suggestedTags by remember { mutableStateOf<List<String>>(emptyList()) }
     var tagQuery by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(sourceUrl) {
         uiState = withContext(Dispatchers.Default) {
@@ -81,6 +92,10 @@ fun DownloadFlowScreen(
                 is DownloadResult.Unsupported -> DownloadFlowUiState.Error(result.reason)
             }
         }
+    }
+
+    LaunchedEffect(tagQuery) {
+        suggestedTags = tagRepository.search(tagQuery).map { it.name }
     }
 
     Box(
@@ -110,7 +125,23 @@ fun DownloadFlowScreen(
                         tagQuery = ""
                     }
                 },
-                onSaved = onSaved,
+                suggestedTags = suggestedTags,
+                onSaved = {
+                    val preview = uiState as? DownloadFlowUiState.Preview
+                    if (preview != null) {
+                        scope.launch {
+                            sessionRepository.saveSession(
+                                capturedAt = System.currentTimeMillis(),
+                                sourceQrUrl = sourceUrl,
+                                sourceHost = runCatching { URI(sourceUrl).host }.getOrNull(),
+                                sourceLabel = runCatching { URI(sourceUrl).host }.getOrNull(),
+                                media = preview.items.map { it.toSaveMediaInput() },
+                                tagNames = selectedTags
+                            )
+                            onSaved()
+                        }
+                    }
+                },
                 onCancel = onCancel
             )
 
@@ -141,6 +172,7 @@ fun DownloadFlowScreen(
 private fun DownloadPreview(
     state: DownloadFlowUiState.Preview,
     selectedTags: List<String>,
+    suggestedTags: List<String>,
     tagQuery: String,
     onQueryChange: (String) -> Unit,
     onTagSelected: (String) -> Unit,
@@ -178,7 +210,7 @@ private fun DownloadPreview(
         }
         PersonTagMiniPanel(
             selectedTags = selectedTags,
-            suggestedTags = emptyList(),
+            suggestedTags = suggestedTags,
             query = tagQuery,
             onQueryChange = onQueryChange,
             onTagSelected = onTagSelected,
@@ -197,6 +229,15 @@ private fun DownloadPreview(
             }
         }
     }
+}
+
+private fun PreviewMedia.toSaveMediaInput(): SaveMediaInput {
+    return SaveMediaInput(
+        type = if (mimeType.startsWith("video/")) MediaType.VIDEO else MediaType.IMAGE,
+        localPath = localPath,
+        mimeType = mimeType,
+        fileName = fileName
+    )
 }
 
 @Composable

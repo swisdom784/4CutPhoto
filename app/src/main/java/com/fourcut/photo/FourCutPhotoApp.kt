@@ -1,5 +1,6 @@
 package com.fourcut.photo
 
+import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -11,8 +12,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.room.Room
 import com.fourcut.photo.core.designsystem.component.FloatingNavMenu
+import com.fourcut.photo.data.local.FourCutDatabase
+import com.fourcut.photo.data.local.session.SessionWithDetails
+import com.fourcut.photo.data.repository.SessionRepository
+import com.fourcut.photo.data.repository.TagRepository
 import com.fourcut.photo.feature.download.DownloadFlowScreen
 import com.fourcut.photo.feature.calendar.CalendarDayUiModel
 import com.fourcut.photo.feature.calendar.CalendarScreen
@@ -23,9 +30,20 @@ import com.fourcut.photo.feature.gallery.GallerySessionUiModel
 import com.fourcut.photo.feature.scan.ScanScreen
 import com.fourcut.photo.feature.session.SessionDetailScreen
 import com.fourcut.photo.navigation.AppDestination
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun FourCutPhotoApp() {
+    val context = LocalContext.current
+    val database = remember {
+        Room.databaseBuilder(context, FourCutDatabase::class.java, "fourcut.db").build()
+    }
+    val tagRepository = remember { TagRepository(database.personTagDao()) }
+    val sessionRepository = remember { SessionRepository(database.sessionDao(), tagRepository) }
+    val sessions by database.sessionDao().observeSessionsWithDetails().collectAsState(initial = emptyList())
+
     var currentDestination by remember { mutableStateOf(AppDestination.Scan) }
     var pendingQrUrl by remember { mutableStateOf<String?>(null) }
     var galleryQuery by remember { mutableStateOf("") }
@@ -45,6 +63,8 @@ fun FourCutPhotoApp() {
         } else if (qrUrl != null) {
             DownloadFlowScreen(
                 sourceUrl = qrUrl,
+                sessionRepository = sessionRepository,
+                tagRepository = tagRepository,
                 onSaved = { pendingQrUrl = null },
                 onCancel = { pendingQrUrl = null }
             )
@@ -59,65 +79,26 @@ fun FourCutPhotoApp() {
                     days = (1..35).map { day ->
                         CalendarDayUiModel(
                             dayOfMonth = day,
-                            hasSessions = day == 12 || day == 21,
-                            isSelected = day == 12
+                            hasSessions = sessions.any { it.dayOfMonth() == day },
+                            isSelected = day == currentDayOfMonth()
                         )
                     },
-                    sessionsForSelectedDay = listOf(
-                        CalendarSessionUiModel(
-                            id = 1L,
-                            title = "Session 1",
-                            timeLabel = "14:10",
-                            sourceLabel = "Photo booth",
-                            sessionIndexForDay = 1,
-                            tagNames = listOf("Hajin", "JungHyun"),
-                            mediaCount = 2
-                        ),
-                        CalendarSessionUiModel(
-                            id = 2L,
-                            title = "Session 2",
-                            timeLabel = "18:42",
-                            sourceLabel = "Life4Cuts",
-                            sessionIndexForDay = 2,
-                            tagNames = listOf("Hajin"),
-                            mediaCount = 2
-                        )
-                    ),
+                    sessionsForSelectedDay = sessions
+                        .filter { it.dayOfMonth() == currentDayOfMonth() }
+                        .map { it.toCalendarSessionUiModel() },
                     onDaySelected = {},
-                    onSessionSelected = {}
+                    onSessionSelected = { selectedSessionId = it }
                 )
 
                 AppDestination.Gallery -> GalleryScreen(
                     query = galleryQuery,
                     onQueryChange = { galleryQuery = it },
-                    groups = listOf(
-                        GalleryDateGroupUiModel(
-                            yearLabel = "2026",
-                            dateLabel = "May 19",
-                            sessions = listOf(
-                                GallerySessionUiModel(
-                                    id = 1L,
-                                    sessionTitle = "Session 1",
-                                    timeLabel = "14:10",
-                                    sourceLabel = "Photo booth",
-                                    coverPath = null,
-                                    tagNames = listOf("Hajin", "JungHyun"),
-                                    hasVideo = true,
-                                    mediaSummary = "1 photo · 1 video"
-                                ),
-                                GallerySessionUiModel(
-                                    id = 2L,
-                                    sessionTitle = "Session 2",
-                                    timeLabel = "18:42",
-                                    sourceLabel = "Life4Cuts",
-                                    coverPath = null,
-                                    tagNames = listOf("Hajin"),
-                                    hasVideo = true,
-                                    mediaSummary = "1 photo · 1 video"
-                                )
-                            )
-                        )
-                    ),
+                    groups = sessions
+                        .filter { session ->
+                            galleryQuery.isBlank() ||
+                                session.tags.any { it.name.contains(galleryQuery, ignoreCase = true) }
+                        }
+                        .toGalleryGroups(),
                     onSessionSelected = { selectedSessionId = it }
                 )
             }
@@ -131,4 +112,61 @@ fun FourCutPhotoApp() {
                 .padding(24.dp)
         )
     }
+}
+
+private val zoneId: ZoneId = ZoneId.systemDefault()
+private val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm").withZone(zoneId)
+private val yearFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy").withZone(zoneId)
+private val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d").withZone(zoneId)
+
+private fun currentDayOfMonth(): Int {
+    return Instant.now().atZone(zoneId).dayOfMonth
+}
+
+private fun SessionWithDetails.dayOfMonth(): Int {
+    return Instant.ofEpochMilli(session.capturedAt).atZone(zoneId).dayOfMonth
+}
+
+private fun SessionWithDetails.toCalendarSessionUiModel(): CalendarSessionUiModel {
+    return CalendarSessionUiModel(
+        id = session.id,
+        title = "Session ${session.sessionIndexForDay}",
+        timeLabel = timeFormatter.format(Instant.ofEpochMilli(session.capturedAt)),
+        sourceLabel = session.sourceLabel,
+        sessionIndexForDay = session.sessionIndexForDay,
+        tagNames = tags.map { it.name },
+        mediaCount = media.size
+    )
+}
+
+private fun List<SessionWithDetails>.toGalleryGroups(): List<GalleryDateGroupUiModel> {
+    return groupBy { dateFormatter.format(Instant.ofEpochMilli(it.session.capturedAt)) }
+        .map { (dateLabel, sessionsForDate) ->
+            val firstInstant = Instant.ofEpochMilli(sessionsForDate.first().session.capturedAt)
+            GalleryDateGroupUiModel(
+                yearLabel = yearFormatter.format(firstInstant),
+                dateLabel = dateLabel,
+                sessions = sessionsForDate.map { it.toGallerySessionUiModel() }
+            )
+        }
+}
+
+private fun SessionWithDetails.toGallerySessionUiModel(): GallerySessionUiModel {
+    val photoCount = media.count { it.type.name == "IMAGE" }
+    val videoCount = media.count { it.type.name == "VIDEO" }
+    val summary = buildList {
+        if (photoCount > 0) add("$photoCount photo")
+        if (videoCount > 0) add("$videoCount video")
+    }.joinToString(" · ")
+
+    return GallerySessionUiModel(
+        id = session.id,
+        sessionTitle = "Session ${session.sessionIndexForDay}",
+        timeLabel = timeFormatter.format(Instant.ofEpochMilli(session.capturedAt)),
+        sourceLabel = session.sourceLabel,
+        coverPath = media.firstOrNull { it.id == session.coverMediaId }?.localPath ?: media.firstOrNull()?.localPath,
+        tagNames = tags.map { it.name },
+        hasVideo = videoCount > 0,
+        mediaSummary = summary.ifBlank { "No media" }
+    )
 }
