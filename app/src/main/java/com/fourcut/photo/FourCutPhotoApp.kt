@@ -31,6 +31,7 @@ import com.fourcut.photo.feature.scan.ScanScreen
 import com.fourcut.photo.feature.session.SessionDetailScreen
 import com.fourcut.photo.navigation.AppDestination
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -48,17 +49,26 @@ fun FourCutPhotoApp() {
     var pendingQrUrl by remember { mutableStateOf<String?>(null) }
     var galleryQuery by remember { mutableStateOf("") }
     var selectedSessionId by remember { mutableStateOf<Long?>(null) }
+    var selectedCalendarDate by remember { mutableStateOf(LocalDate.now(zoneId)) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         val qrUrl = pendingQrUrl
         val detailSessionId = selectedSessionId
-        if (detailSessionId != null) {
+        val selectedSession = sessions.firstOrNull { it.session.id == detailSessionId }
+        if (detailSessionId != null && selectedSession != null) {
             SessionDetailScreen(
-                dateLabel = "2026.05.19 · Session $detailSessionId",
-                tagNames = listOf("Hajin", "JungHyun"),
-                mediaPaths = listOf("photo_001.jpg", "video_001.mp4"),
+                dateLabel = selectedSession.detailDateLabel(),
+                sessionTitle = "Session ${selectedSession.session.sessionIndexForDay}",
+                sourceLabel = selectedSession.session.sourceLabel,
+                tagNames = selectedSession.tags.map { it.name },
+                mediaPaths = selectedSession.media.map { it.localPath },
                 onBack = { selectedSessionId = null },
                 onEditTags = {}
+            )
+        } else if (detailSessionId != null) {
+            Text(
+                text = "Session not found",
+                modifier = Modifier.align(Alignment.Center)
             )
         } else if (qrUrl != null) {
             DownloadFlowScreen(
@@ -76,17 +86,19 @@ fun FourCutPhotoApp() {
                 )
 
                 AppDestination.Calendar -> CalendarScreen(
-                    days = (1..35).map { day ->
+                    days = (1..selectedCalendarDate.lengthOfMonth()).map { day ->
                         CalendarDayUiModel(
                             dayOfMonth = day,
-                            hasSessions = sessions.any { it.dayOfMonth() == day },
-                            isSelected = day == currentDayOfMonth()
+                            hasSessions = sessions.any { it.localDate().dayOfMonth == day },
+                            isSelected = day == selectedCalendarDate.dayOfMonth
                         )
                     },
                     sessionsForSelectedDay = sessions
-                        .filter { it.dayOfMonth() == currentDayOfMonth() }
+                        .filter { it.localDate() == selectedCalendarDate }
                         .map { it.toCalendarSessionUiModel() },
-                    onDaySelected = {},
+                    onDaySelected = { day ->
+                        selectedCalendarDate = selectedCalendarDate.withDayOfMonth(day)
+                    },
                     onSessionSelected = { selectedSessionId = it }
                 )
 
@@ -119,12 +131,8 @@ private val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:m
 private val yearFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy").withZone(zoneId)
 private val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d").withZone(zoneId)
 
-private fun currentDayOfMonth(): Int {
-    return Instant.now().atZone(zoneId).dayOfMonth
-}
-
-private fun SessionWithDetails.dayOfMonth(): Int {
-    return Instant.ofEpochMilli(session.capturedAt).atZone(zoneId).dayOfMonth
+private fun SessionWithDetails.localDate(): LocalDate {
+    return Instant.ofEpochMilli(session.capturedAt).atZone(zoneId).toLocalDate()
 }
 
 private fun SessionWithDetails.toCalendarSessionUiModel(): CalendarSessionUiModel {
@@ -137,6 +145,11 @@ private fun SessionWithDetails.toCalendarSessionUiModel(): CalendarSessionUiMode
         tagNames = tags.map { it.name },
         mediaCount = media.size
     )
+}
+
+private fun SessionWithDetails.detailDateLabel(): String {
+    val instant = Instant.ofEpochMilli(session.capturedAt)
+    return "${yearFormatter.format(instant)} ${dateFormatter.format(instant)} · ${timeFormatter.format(instant)}"
 }
 
 private fun List<SessionWithDetails>.toGalleryGroups(): List<GalleryDateGroupUiModel> {

@@ -27,6 +27,8 @@ import coil.compose.AsyncImage
 @Composable
 fun SessionDetailScreen(
     dateLabel: String,
+    sessionTitle: String,
+    sourceLabel: String?,
     tagNames: List<String>,
     mediaPaths: List<String>,
     onBack: () -> Unit,
@@ -45,8 +47,20 @@ fun SessionDetailScreen(
         }
         Text(
             text = dateLabel,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = sessionTitle,
             style = MaterialTheme.typography.headlineSmall
         )
+        sourceLabel?.takeIf { it.isNotBlank() }?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         Text(
             text = if (tagNames.isEmpty()) "No people tags" else tagNames.joinToString(prefix = "#", separator = " #"),
             style = MaterialTheme.typography.bodyMedium,
