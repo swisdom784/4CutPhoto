@@ -202,6 +202,7 @@ fun FourCutPhotoApp() {
                                 session.tags.any { it.name.contains(galleryQuery, ignoreCase = true) }
                         }
                         .toGalleryGroups(),
+                    onOpenScan = { currentDestination = AppDestination.Scan },
                     onSessionSelected = { selectedSessionId = it }
                 )
             }

@@ -24,6 +24,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.fourcut.photo.core.designsystem.component.QuietStateCard
+import com.fourcut.photo.core.designsystem.component.QuietStateKind
 
 data class CalendarDayUiModel(
     val dayOfMonth: Int,
@@ -215,27 +217,7 @@ private fun CalendarDayCell(
 
 @Composable
 private fun CalendarEmptyState() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(8.dp),
-        tonalElevation = 1.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = "No sessions on this day",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = "Saved QR sessions from this date will appear here separately.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
+    QuietStateCard(kind = QuietStateKind.CalendarDayEmpty)
 }
 
 @Composable

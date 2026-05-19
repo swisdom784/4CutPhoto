@@ -5,13 +5,10 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -35,6 +32,8 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import com.fourcut.photo.core.designsystem.component.QuietStateCard
+import com.fourcut.photo.core.designsystem.component.QuietStateKind
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
@@ -92,10 +91,13 @@ fun ScanScreen(
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            PermissionRequestCard(
-                onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
-                onUseTestQr = { onQrDetected("https://example.com/photo.jpg") },
-                modifier = Modifier.align(Alignment.Center)
+            QuietStateCard(
+                kind = QuietStateKind.CameraPermission,
+                onPrimaryAction = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                onSecondaryAction = { onQrDetected("https://example.com/photo.jpg") },
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(24.dp)
             )
         }
 
@@ -126,41 +128,6 @@ private fun ScanMessageCard(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
-    }
-}
-
-@Composable
-private fun PermissionRequestCard(
-    onRequestPermission: () -> Unit,
-    onUseTestQr: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.padding(24.dp),
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = "Scan QR",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Text(
-                text = "Camera access is needed to scan photo booth QR codes.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Button(onClick = onRequestPermission) {
-                Text("Allow camera")
-            }
-            Button(onClick = onUseTestQr) {
-                Text("Use test QR")
-            }
-        }
     }
 }
 

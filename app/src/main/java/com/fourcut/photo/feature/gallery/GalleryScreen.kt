@@ -26,6 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.fourcut.photo.core.designsystem.component.QuietStateCard
+import com.fourcut.photo.core.designsystem.component.QuietStateKind
 
 data class GalleryDateGroupUiModel(
     val yearLabel: String,
@@ -54,6 +56,7 @@ fun GalleryScreen(
     onQueryChange: (String) -> Unit,
     availableTagNames: List<String>,
     groups: List<GalleryDateGroupUiModel>,
+    onOpenScan: () -> Unit,
     onSessionSelected: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -107,7 +110,10 @@ fun GalleryScreen(
         }
         galleryEmptyState(query, groups.size)?.let { state ->
             item {
-                GalleryEmptyStateCard(state)
+                GalleryEmptyStateCard(
+                    state = state,
+                    onOpenScan = onOpenScan
+                )
             }
         }
         groups.forEach { group ->
@@ -138,36 +144,17 @@ fun GalleryScreen(
 }
 
 @Composable
-private fun GalleryEmptyStateCard(state: GalleryEmptyState) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = when (state) {
-                    GalleryEmptyState.NoSessions -> "No saved sessions yet"
-                    GalleryEmptyState.NoSearchResults -> "No matching people tags"
-                },
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = when (state) {
-                    GalleryEmptyState.NoSessions ->
-                        "Scan a photo booth QR code to start building your four-cut archive."
-                    GalleryEmptyState.NoSearchResults ->
-                        "Try another name, or add the person tag while saving or editing a session."
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
+private fun GalleryEmptyStateCard(
+    state: GalleryEmptyState,
+    onOpenScan: () -> Unit
+) {
+    QuietStateCard(
+        kind = when (state) {
+            GalleryEmptyState.NoSessions -> QuietStateKind.GalleryEmpty
+            GalleryEmptyState.NoSearchResults -> QuietStateKind.GallerySearchEmpty
+        },
+        onPrimaryAction = if (state == GalleryEmptyState.NoSessions) onOpenScan else null
+    )
 }
 
 @Composable
