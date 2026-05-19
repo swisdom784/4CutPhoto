@@ -168,7 +168,6 @@ fun FourCutPhotoApp() {
         } else {
             when (currentDestination) {
                 AppDestination.Scan -> ScanScreen(
-                    onBack = {},
                     onQrDetected = { pendingQrUrl = it }
                 )
 

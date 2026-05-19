@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.fourcut.photo.core.designsystem.component.QuietStateCard
 import com.fourcut.photo.core.designsystem.component.QuietStateKind
@@ -57,7 +58,7 @@ fun CalendarScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(20.dp),
+            .padding(start = 20.dp, top = 36.dp, end = 20.dp, bottom = 20.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         item {
@@ -106,12 +107,15 @@ private fun CalendarHeader(
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = "캘린더",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = monthLabel,
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {

@@ -79,7 +79,7 @@ fun SessionDetailScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(20.dp),
+            .padding(start = 20.dp, top = 32.dp, end = 20.dp, bottom = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         TextButton(onClick = onBack) {

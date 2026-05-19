@@ -4,21 +4,16 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.border
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,8 +25,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -53,7 +56,6 @@ import java.util.concurrent.Executors
 
 @Composable
 fun ScanScreen(
-    onBack: () -> Unit,
     onQrDetected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -98,22 +100,9 @@ fun ScanScreen(
             QuietStateCard(
                 kind = QuietStateKind.CameraPermission,
                 onPrimaryAction = { permissionLauncher.launch(Manifest.permission.CAMERA) },
-                onSecondaryAction = { onQrDetected("https://example.com/photo.jpg") },
                 modifier = Modifier
                     .align(Alignment.Center)
                     .padding(24.dp)
-            )
-        }
-
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "‹",
-                color = if (hasCameraPermission) Color.White else MaterialTheme.colorScheme.onSurface
             )
         }
 
@@ -133,74 +122,60 @@ private fun ScanFrameOverlay(modifier: Modifier = Modifier) {
     val overlayColor = Color.Black.copy(alpha = 0.25f)
     BoxWithConstraints(modifier = modifier) {
         val scanSize = if (maxWidth < 340.dp) maxWidth - 48.dp else 292.dp
-        Column(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .background(overlayColor)
-            ) {
-                Text(
-                    text = "4CutPhoto",
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 22.dp, end = 22.dp),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = "QR을 인식해주세요",
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 18.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(scanSize)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(overlayColor)
-                )
-                Box(
-                    modifier = Modifier
-                        .size(scanSize)
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(8.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(116.dp)
-                            .height(2.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+        val frameColor = MaterialTheme.colorScheme.surfaceVariant
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val frameSizePx = scanSize.toPx()
+            val left = (size.width - frameSizePx) / 2f
+            val top = (size.height - frameSizePx) / 2f
+            val cornerRadius = 18.dp.toPx()
+            val frameRect = Rect(
+                offset = Offset(left, top),
+                size = Size(frameSizePx, frameSizePx)
+            )
+            val overlayPath = Path().apply {
+                addRect(Rect(Offset.Zero, size))
+                addRoundRect(
+                    RoundRect(
+                        rect = frameRect,
+                        cornerRadius = CornerRadius(cornerRadius, cornerRadius)
                     )
-                }
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(overlayColor)
                 )
+                fillType = PathFillType.EvenOdd
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .background(overlayColor)
+            drawPath(path = overlayPath, color = overlayColor)
+            drawRoundRect(
+                color = frameColor,
+                topLeft = frameRect.topLeft,
+                size = frameRect.size,
+                cornerRadius = CornerRadius(cornerRadius, cornerRadius),
+                style = Stroke(width = 1.dp.toPx())
             )
         }
+        Text(
+            text = "4CutPhoto",
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 34.dp, end = 22.dp),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Text(
+            text = "QR을 인식해주세요",
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(bottom = scanSize + 40.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White,
+            textAlign = TextAlign.Center
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .width(116.dp)
+                .height(2.dp)
+                .background(frameColor)
+        )
     }
 }
 

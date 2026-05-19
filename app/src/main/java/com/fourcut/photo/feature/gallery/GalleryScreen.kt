@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.fourcut.photo.core.designsystem.component.QuietStateCard
@@ -64,14 +65,15 @@ fun GalleryScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(20.dp),
+            .padding(start = 20.dp, top = 36.dp, end = 20.dp, bottom = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = "갤러리",
-                    style = MaterialTheme.typography.headlineMedium
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "QR 하나가 하나의 세션으로 따로 저장돼요.",

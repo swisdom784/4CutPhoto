@@ -46,8 +46,7 @@ fun quietStateCopy(kind: QuietStateKind): QuietStateCopy {
         QuietStateKind.CameraPermission -> QuietStateCopy(
             title = "카메라 권한이 필요해요",
             message = "앱을 열자마자 네컷사진 QR을 스캔할 수 있도록 카메라를 허용해주세요.",
-            primaryActionLabel = "카메라 허용",
-            secondaryActionLabel = "테스트 QR 사용"
+            primaryActionLabel = "카메라 허용"
         )
     }
 }

@@ -38,5 +38,6 @@ class QuietStateCopyTest {
         assertEquals("카메라 권한이 필요해요", copy.title)
         assertEquals("앱을 열자마자 네컷사진 QR을 스캔할 수 있도록 카메라를 허용해주세요.", copy.message)
         assertEquals("카메라 허용", copy.primaryActionLabel)
+        assertEquals(null, copy.secondaryActionLabel)
     }
 }
