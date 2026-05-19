@@ -3,7 +3,6 @@ package com.fourcut.photo
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -14,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.fourcut.photo.core.designsystem.component.FloatingNavMenu
+import com.fourcut.photo.feature.download.DownloadFlowScreen
 import com.fourcut.photo.feature.scan.ScanScreen
 import com.fourcut.photo.navigation.AppDestination
 
@@ -25,20 +25,11 @@ fun FourCutPhotoApp() {
     Box(modifier = Modifier.fillMaxSize()) {
         val qrUrl = pendingQrUrl
         if (qrUrl != null) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Text(
-                    text = "Download: $qrUrl",
-                    modifier = Modifier.align(Alignment.Center)
-                )
-                Button(
-                    onClick = { pendingQrUrl = null },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(24.dp)
-                ) {
-                    Text("Back to Scan")
-                }
-            }
+            DownloadFlowScreen(
+                sourceUrl = qrUrl,
+                onSaved = { pendingQrUrl = null },
+                onCancel = { pendingQrUrl = null }
+            )
         } else {
             when (currentDestination) {
                 AppDestination.Scan -> ScanScreen(
