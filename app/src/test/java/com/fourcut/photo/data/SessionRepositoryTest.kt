@@ -81,4 +81,23 @@ class SessionRepositoryTest {
         assertEquals(1, first.sessionIndexForDay)
         assertEquals(2, second.sessionIndexForDay)
     }
+
+    @Test
+    fun saveSessionCanPersistMediaAfterSessionIdIsCreated() = runTest {
+        val sessionId = sessionRepository.saveSession(
+            capturedAt = 300L,
+            sourceQrUrl = "https://example.com/qr",
+            sourceHost = "example.com",
+            sourceLabel = "Example Booth",
+            media = listOf(SaveMediaInput(MediaType.IMAGE, "https://example.com/image.jpg", "image/jpeg", "image.jpg")),
+            tagNames = emptyList(),
+            persistMedia = { createdSessionId, input ->
+                input.copy(localPath = "media/sessions/$createdSessionId/original/${input.fileName}")
+            }
+        )
+
+        val saved = db.sessionDao().getSessionWithDetails(sessionId)
+
+        assertEquals("media/sessions/$sessionId/original/image.jpg", saved.media.first().localPath)
+    }
 }

@@ -9,6 +9,7 @@ interface SessionStore {
         sourceHost: String?,
         sourceLabel: String?,
         media: List<SaveMediaInput>,
-        tagNames: List<String>
+        tagNames: List<String>,
+        persistMedia: suspend (Long, SaveMediaInput) -> SaveMediaInput = { _, input -> input }
     ): Long
 }

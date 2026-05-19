@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.room.Room
 import com.fourcut.photo.core.designsystem.component.FloatingNavMenu
+import com.fourcut.photo.core.media.AppMediaStorage
 import com.fourcut.photo.data.local.FourCutDatabase
 import com.fourcut.photo.data.local.session.SessionWithDetails
 import com.fourcut.photo.data.repository.SessionRepository
@@ -43,6 +44,7 @@ fun FourCutPhotoApp() {
     }
     val tagRepository = remember { TagRepository(database.personTagDao()) }
     val sessionRepository = remember { SessionRepository(database.sessionDao(), tagRepository) }
+    val mediaStorage = remember { AppMediaStorage(context) }
     val sessions by database.sessionDao().observeSessionsWithDetails().collectAsState(initial = emptyList())
 
     var currentDestination by remember { mutableStateOf(AppDestination.Scan) }
@@ -75,6 +77,7 @@ fun FourCutPhotoApp() {
                 sourceUrl = qrUrl,
                 sessionRepository = sessionRepository,
                 tagRepository = tagRepository,
+                mediaStorage = mediaStorage,
                 onSaved = { pendingQrUrl = null },
                 onCancel = { pendingQrUrl = null }
             )

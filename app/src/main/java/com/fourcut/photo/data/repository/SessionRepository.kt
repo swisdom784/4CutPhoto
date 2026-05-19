@@ -25,13 +25,33 @@ class SessionRepository(
     private val tagRepository: TagRepository,
     private val zoneId: ZoneId = ZoneId.systemDefault()
 ) : SessionStore {
-    override suspend fun saveSession(
+    suspend fun saveSession(
         capturedAt: Long,
         sourceQrUrl: String,
         sourceHost: String?,
         sourceLabel: String?,
         media: List<SaveMediaInput>,
         tagNames: List<String>
+    ): Long {
+        return saveSession(
+            capturedAt = capturedAt,
+            sourceQrUrl = sourceQrUrl,
+            sourceHost = sourceHost,
+            sourceLabel = sourceLabel,
+            media = media,
+            tagNames = tagNames,
+            persistMedia = { _, input -> input }
+        )
+    }
+
+    override suspend fun saveSession(
+        capturedAt: Long,
+        sourceQrUrl: String,
+        sourceHost: String?,
+        sourceLabel: String?,
+        media: List<SaveMediaInput>,
+        tagNames: List<String>,
+        persistMedia: suspend (Long, SaveMediaInput) -> SaveMediaInput
     ): Long {
         val now = System.currentTimeMillis()
         val sessionIndex = nextSessionIndexForDay(capturedAt)
@@ -48,16 +68,17 @@ class SessionRepository(
         )
 
         val mediaIds = media.map { input ->
+            val persistedInput = persistMedia(sessionId, input)
             sessionDao.insertMedia(
                 MediaItemEntity(
                     sessionId = sessionId,
-                    type = input.type,
-                    localPath = input.localPath,
-                    mimeType = input.mimeType,
-                    fileName = input.fileName,
-                    width = input.width,
-                    height = input.height,
-                    durationMillis = input.durationMillis,
+                    type = persistedInput.type,
+                    localPath = persistedInput.localPath,
+                    mimeType = persistedInput.mimeType,
+                    fileName = persistedInput.fileName,
+                    width = persistedInput.width,
+                    height = persistedInput.height,
+                    durationMillis = persistedInput.durationMillis,
                     createdAt = now
                 )
             )

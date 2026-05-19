@@ -36,6 +36,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.fourcut.photo.core.designsystem.component.PersonTagMiniPanel
 import com.fourcut.photo.core.download.DownloadResolver
 import com.fourcut.photo.core.download.DownloadResult
+import com.fourcut.photo.core.media.AppMediaStorage
 import com.fourcut.photo.data.local.session.MediaType
 import com.fourcut.photo.data.repository.SaveMediaInput
 import com.fourcut.photo.data.repository.SessionRepository
@@ -44,6 +45,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URI
+import java.net.URL
 
 sealed interface DownloadFlowUiState {
     data object Resolving : DownloadFlowUiState
@@ -64,6 +66,7 @@ fun DownloadFlowScreen(
     sourceUrl: String,
     sessionRepository: SessionRepository,
     tagRepository: TagRepository,
+    mediaStorage: AppMediaStorage,
     onSaved: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
@@ -136,7 +139,10 @@ fun DownloadFlowScreen(
                                 sourceHost = runCatching { URI(sourceUrl).host }.getOrNull(),
                                 sourceLabel = runCatching { URI(sourceUrl).host }.getOrNull(),
                                 media = preview.items.map { it.toSaveMediaInput() },
-                                tagNames = selectedTags
+                                tagNames = selectedTags,
+                                persistMedia = { sessionId, input ->
+                                    input.persistToAppStorage(sessionId, mediaStorage)
+                                }
                             )
                             onSaved()
                         }
@@ -238,6 +244,22 @@ private fun PreviewMedia.toSaveMediaInput(): SaveMediaInput {
         mimeType = mimeType,
         fileName = fileName
     )
+}
+
+private suspend fun SaveMediaInput.persistToAppStorage(
+    sessionId: Long,
+    mediaStorage: AppMediaStorage
+): SaveMediaInput {
+    if (!localPath.startsWith("http://") && !localPath.startsWith("https://")) {
+        return this
+    }
+
+    val file = withContext(Dispatchers.IO) {
+        URL(localPath).openStream().use { input ->
+            mediaStorage.saveOriginal(sessionId, fileName, input)
+        }
+    }
+    return copy(localPath = file.absolutePath)
 }
 
 @Composable
