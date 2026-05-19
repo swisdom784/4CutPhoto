@@ -1,33 +1,89 @@
-# 4CutPhoto Android MVP QA Checklist
+# 4CutPhoto Android MVP QA 체크리스트
 
-- [ ] App launches directly into Scan.
-- [ ] Floating menu expands upward from the bottom-right button.
-- [ ] Floating menu navigates to Scan, Calendar, and Gallery.
-- [ ] Camera permission request appears when needed.
-- [ ] QR scanner detects an HTTP or HTTPS QR once.
-- [ ] Non-URL QR shows unsupported state.
-- [ ] Direct image or video URL enters preview flow.
-- [ ] Non-direct URL enters WebView fallback.
-- [ ] WebView fallback shows waiting guidance before any download is captured.
-- [ ] WebView fallback keeps the source page open after a photo or video download is captured.
-- [ ] WebView fallback can capture multiple photo/video downloads from one QR before preview.
-- [ ] WebView fallback shows an unsupported-download message for non-photo/video files.
-- [ ] Review captured items opens the save preview with each captured item still separated.
-- [ ] Person tag mini panel filters existing tags.
-- [ ] Entering a new name creates and applies a person tag.
-- [ ] Long-press delete shows confirmation.
-- [ ] Confirmed tag deletion removes the tag from existing sessions.
-- [ ] Saving a session makes it appear in Gallery.
-- [ ] Two QR scans saved on the same day appear as two separate Gallery session cards.
-- [ ] A photo/video pair from one QR is not merged with another photo/video pair from another QR.
-- [ ] Long same-day Gallery groups remain readable and scroll smoothly.
-- [ ] Saving a session marks the date in Calendar.
-- [ ] Calendar selected-date list shows multiple same-day sessions separately.
-- [ ] Session detail shows date and person tags.
-- [ ] Session detail shows session order and source hint when available.
-- [ ] Session detail allows tag editing.
-- [ ] Session detail exports saved photos and videos to the device gallery.
-- [ ] Real Life4Cuts QR download page works on a physical device.
-- [ ] Real Photoism QR download page works on a physical device.
-- [ ] The app uses a white-forward sand visual style with clear hierarchy and comfortable touch targets.
-- [ ] App remains usable after closing and reopening.
+## 실행과 권한
+
+- [ ] 앱을 실행하면 첫 화면이 바로 스캔 화면으로 열린다.
+- [ ] 카메라 권한이 없을 때 권한 요청 안내가 한국어로 표시된다.
+- [ ] 카메라 권한을 허용하면 다시 앱을 열었을 때 QR 스캔 화면이 바로 표시된다.
+- [ ] 앱 아이콘이 런처에서 4CutPhoto 아이콘으로 표시된다.
+
+## 스캔 화면
+
+- [ ] QR 스캔 영역이 가운데 정방형 라운드 박스로 보인다.
+- [ ] 스캔 영역 바깥은 약한 검은 반투명 오버레이로 덮인다.
+- [ ] 스캔 영역 중앙에 샌드 톤 가이드 선이 보인다.
+- [ ] 우측 상단에 `4CutPhoto` 앱 이름이 작고 굵게 표시된다.
+- [ ] HTTP/HTTPS QR은 한 번만 인식되어 다운로드 흐름으로 이동한다.
+- [ ] URL이 아닌 QR은 지원하지 않는 QR 안내를 표시한다.
+
+## 플로팅 메뉴
+
+- [ ] 우측 하단 원형 버튼을 누르면 메뉴가 위로 확장된다.
+- [ ] 메뉴 항목은 `스캔`, `캘린더`, `갤러리`로 표시된다.
+- [ ] 메뉴 항목의 크기는 텍스트 길이에 따라 흔들리지 않고 고정된다.
+- [ ] 각 메뉴 항목을 누르면 해당 화면으로 이동한다.
+
+## 다운로드와 저장
+
+- [ ] 직접 이미지 또는 영상 URL QR은 저장 미리보기 화면으로 이동한다.
+- [ ] 일반 다운로드 페이지 QR은 앱 내부 WebView로 열린다.
+- [ ] WebView는 페이지 로딩 중 상태를 한국어로 표시한다.
+- [ ] 페이지를 열 수 없을 때 네트워크 확인 안내를 한국어로 표시한다.
+- [ ] WebView 안의 다운로드 버튼을 눌렀을 때 사진/영상 파일이 앱에 담긴다.
+- [ ] WebView에서 새 창이나 팝업으로 열리는 다운로드도 앱 안에서 이어진다.
+- [ ] 한 QR에서 사진과 영상을 여러 개 담은 뒤 한 세션으로 저장할 수 있다.
+- [ ] 사진/영상이 아닌 다운로드는 지원하지 않는 다운로드 안내를 표시한다.
+- [ ] 저장 중에는 중복 저장을 막고 저장 중 상태를 표시한다.
+- [ ] 저장 실패 시 네트워크 확인 안내를 표시한다.
+
+## 사람 태그
+
+- [ ] 저장 전 태그 미니 패널에서 기존 사람 태그를 검색할 수 있다.
+- [ ] 기존 태그를 누르면 현재 세션에 적용된다.
+- [ ] 검색 결과가 없을 때 이름을 입력하고 엔터를 누르면 새 태그가 생성되어 적용된다.
+- [ ] 선택된 태그를 다시 누르면 해당 세션 선택에서 제거된다.
+- [ ] 태그를 길게 누르면 삭제 확인 메시지가 표시된다.
+- [ ] 삭제를 확정하면 모든 세션에서 해당 태그가 제거된다.
+
+## 갤러리
+
+- [ ] 저장한 세션이 날짜별 그룹으로 표시된다.
+- [ ] 같은 날 여러 QR을 저장하면 각각 별도 세션 카드로 표시된다.
+- [ ] 한 QR의 사진1/영상1 세션과 다른 QR의 사진2/영상2 세션이 합쳐지지 않는다.
+- [ ] 같은 날짜에 세션이 많아도 스크롤이 자연스럽고 카드 구분이 명확하다.
+- [ ] 태그 칩을 누르면 해당 태그가 있는 세션만 필터링된다.
+- [ ] 선택된 태그 칩은 올리브색 배경과 흰 글씨로 반전된다.
+- [ ] 선택된 태그 칩을 다시 누르면 필터가 해제된다.
+- [ ] 검색 결과가 없을 때 한국어 빈 상태가 표시된다.
+
+## 캘린더
+
+- [ ] 월 제목과 화면 제목이 한국어로 표시된다.
+- [ ] 날짜 셀 배경은 전체 배경과 같은 톤으로 미니멀하게 보인다.
+- [ ] 저장된 세션이 있는 날짜에는 아주 작은 점이 표시된다.
+- [ ] 하루에 세션이 2개 이상이면 세션 수만큼 점이 가로로 표시된다.
+- [ ] 날짜를 누르면 해당 날짜의 세션들이 아래에 별도 항목으로 표시된다.
+- [ ] 선택한 날짜에 기록이 없으면 한국어 빈 상태가 표시된다.
+
+## 세션 상세
+
+- [ ] 상세 화면 상단에 날짜와 사람 태그가 표시된다.
+- [ ] 사진은 이미지로, 영상은 영상 타일로 구분되어 표시된다.
+- [ ] 상세 화면에서 태그를 수정할 수 있다.
+- [ ] 상세 화면에서 세션 미디어를 기기 갤러리에 저장할 수 있다.
+- [ ] 상세 화면에서 세션 삭제 확인 후 삭제할 수 있다.
+
+## 실기기 QR 확인
+
+- [ ] 실제 인생네컷 QR 다운로드 페이지가 물리 기기에서 열린다.
+- [ ] 실제 인생네컷 QR에서 사진과 영상을 담아 저장할 수 있다.
+- [ ] 실제 포토이즘 QR 다운로드 페이지가 물리 기기에서 열린다.
+- [ ] 실제 포토이즘 QR에서 사진과 영상을 담아 저장할 수 있다.
+- [ ] QR 만료 또는 네트워크 차단 상태에서 사용자가 이해할 수 있는 안내가 표시된다.
+
+## 전체 UX
+
+- [ ] 샌드 톤과 화이트 톤이 섞인 미니멀한 인상으로 보인다.
+- [ ] 주요 버튼과 칩의 터치 영역이 너무 작지 않다.
+- [ ] 모든 사용자 노출 문구가 한국어로 표시된다.
+- [ ] 앱을 종료했다 다시 열어도 저장된 세션과 태그가 유지된다.

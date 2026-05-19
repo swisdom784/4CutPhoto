@@ -1,8 +1,12 @@
 package com.fourcut.photo.feature.download
 
+import android.os.Build
+import android.os.Message
 import android.webkit.DownloadListener
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
@@ -372,6 +376,21 @@ private fun DownloadWebViewFallback(
                 .fillMaxWidth(),
             factory = { context ->
                 WebView(context).apply {
+                    val downloadPageConfig = defaultWebViewDownloadPageConfig()
+                    configureDownloadPageWebView(downloadPageConfig)
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onCreateWindow(
+                            view: WebView?,
+                            isDialog: Boolean,
+                            isUserGesture: Boolean,
+                            resultMsg: Message?
+                        ): Boolean {
+                            val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false
+                            transport.webView = this@apply
+                            resultMsg.sendToTarget()
+                            return true
+                        }
+                    }
                     webViewClient = object : WebViewClient() {
                         override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                             pageStatus = WebViewPageStatus.Loading
@@ -392,8 +411,17 @@ private fun DownloadWebViewFallback(
                                 pageStatus = WebViewPageStatus.Failed
                             }
                         }
+
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView?,
+                            request: WebResourceRequest?
+                        ): Boolean {
+                            if (!downloadPageConfig.keepNavigationInsideWebView) return false
+                            val nextUrl = request?.url?.toString() ?: return false
+                            view?.loadUrl(nextUrl)
+                            return true
+                        }
                     }
-                    settings.javaScriptEnabled = true
                     setDownloadListener(
                         DownloadListener { url, _, contentDisposition, mimeType, _ ->
                             val capturedMedia = captureWebViewDownload(
@@ -429,5 +457,17 @@ private fun DownloadWebViewFallback(
                 Text("취소")
             }
         }
+    }
+}
+
+private fun WebView.configureDownloadPageWebView(config: WebViewDownloadPageConfig) {
+    settings.javaScriptEnabled = config.javaScriptEnabled
+    settings.domStorageEnabled = config.domStorageEnabled
+    settings.setSupportMultipleWindows(config.supportMultipleWindows)
+    settings.javaScriptCanOpenWindowsAutomatically = config.javaScriptCanOpenWindowsAutomatically
+    settings.loadWithOverviewMode = config.loadWithOverviewMode
+    settings.useWideViewPort = config.useWideViewPort
+    if (config.allowMixedContentCompatibilityMode && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
     }
 }
