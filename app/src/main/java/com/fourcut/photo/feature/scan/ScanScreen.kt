@@ -58,6 +58,7 @@ fun ScanScreen(
     ) { granted ->
         hasCameraPermission = granted
     }
+    var scanMessage by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = modifier
@@ -75,7 +76,19 @@ fun ScanScreen(
 
         if (hasCameraPermission) {
             CameraPreview(
-                onQrDetected = onQrDetected,
+                onScanResult = { result ->
+                    when (result) {
+                        is QrScanResult.AcceptedUrl -> {
+                            scanMessage = null
+                            onQrDetected(result.value)
+                        }
+                        is QrScanResult.Unsupported -> {
+                            scanMessage = "This QR is not a download link."
+                        }
+                        QrScanResult.DuplicateIgnored,
+                        QrScanResult.Ignored -> Unit
+                    }
+                },
                 modifier = Modifier.fillMaxSize()
             )
         } else {
@@ -85,6 +98,34 @@ fun ScanScreen(
                 modifier = Modifier.align(Alignment.Center)
             )
         }
+
+        scanMessage?.let { message ->
+            ScanMessageCard(
+                message = message,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(24.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScanMessageCard(
+    message: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Text(
+            text = message,
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
@@ -126,13 +167,14 @@ private fun PermissionRequestCard(
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 @Composable
 private fun CameraPreview(
-    onQrDetected: (String) -> Unit,
+    onScanResult: (QrScanResult) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     var isProcessing by remember { mutableStateOf(false) }
+    var lastAcceptedValue by remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -176,13 +218,21 @@ private fun CameraPreview(
                                 val rawValue = barcodes
                                     .firstOrNull { it.format == Barcode.FORMAT_QR_CODE }
                                     ?.rawValue
-                                if (
-                                    !isProcessing &&
-                                    rawValue != null &&
-                                    (rawValue.startsWith("http://") || rawValue.startsWith("https://"))
+                                when (
+                                    val result = classifyQrScan(
+                                        rawValue = rawValue,
+                                        lastAcceptedValue = lastAcceptedValue,
+                                        isProcessing = isProcessing
+                                    )
                                 ) {
-                                    isProcessing = true
-                                    onQrDetected(rawValue)
+                                    is QrScanResult.AcceptedUrl -> {
+                                        isProcessing = true
+                                        lastAcceptedValue = result.value
+                                        onScanResult(result)
+                                    }
+                                    is QrScanResult.Unsupported -> onScanResult(result)
+                                    QrScanResult.DuplicateIgnored,
+                                    QrScanResult.Ignored -> Unit
                                 }
                             }
                             .addOnCompleteListener {
