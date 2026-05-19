@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -78,6 +79,7 @@ fun DownloadFlowScreen(
     val selectedTags = remember { mutableStateListOf<String>() }
     var suggestedTags by remember { mutableStateOf<List<String>>(emptyList()) }
     var tagQuery by remember { mutableStateOf("") }
+    var saveStatus by remember(sourceUrl) { mutableStateOf(DownloadSaveStatus.Idle) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(sourceUrl) {
@@ -119,6 +121,7 @@ fun DownloadFlowScreen(
             is DownloadFlowUiState.Preview -> DownloadPreview(
                 state = state,
                 selectedTags = selectedTags,
+                saveStatus = saveStatus,
                 tagQuery = tagQuery,
                 onQueryChange = { tagQuery = it },
                 onTagSelected = { tag ->
@@ -137,20 +140,26 @@ fun DownloadFlowScreen(
                 suggestedTags = suggestedTags,
                 onSaved = {
                     val preview = uiState as? DownloadFlowUiState.Preview
-                    if (preview != null) {
+                    if (preview != null && saveStatus != DownloadSaveStatus.Saving) {
+                        saveStatus = DownloadSaveStatus.Saving
                         scope.launch {
-                            sessionRepository.saveSession(
-                                capturedAt = System.currentTimeMillis(),
-                                sourceQrUrl = sourceUrl,
-                                sourceHost = runCatching { URI(sourceUrl).host }.getOrNull(),
-                                sourceLabel = runCatching { URI(sourceUrl).host }.getOrNull(),
-                                media = preview.items.map { it.toSaveMediaInput() },
-                                tagNames = selectedTags,
-                                persistMedia = { sessionId, input ->
-                                    input.persistToAppStorage(sessionId, mediaStorage)
-                                }
-                            )
-                            onSaved()
+                            runCatching {
+                                sessionRepository.saveSession(
+                                    capturedAt = System.currentTimeMillis(),
+                                    sourceQrUrl = sourceUrl,
+                                    sourceHost = runCatching { URI(sourceUrl).host }.getOrNull(),
+                                    sourceLabel = runCatching { URI(sourceUrl).host }.getOrNull(),
+                                    media = preview.items.map { it.toSaveMediaInput() },
+                                    tagNames = selectedTags,
+                                    persistMedia = { sessionId, input ->
+                                        input.persistToAppStorage(sessionId, mediaStorage)
+                                    }
+                                )
+                            }.onSuccess {
+                                onSaved()
+                            }.onFailure {
+                                saveStatus = DownloadSaveStatus.Failed
+                            }
                         }
                     }
                 },
@@ -188,6 +197,7 @@ private fun DownloadPreview(
     state: DownloadFlowUiState.Preview,
     selectedTags: List<String>,
     suggestedTags: List<String>,
+    saveStatus: DownloadSaveStatus,
     tagQuery: String,
     onQueryChange: (String) -> Unit,
     onTagSelected: (String) -> Unit,
@@ -238,11 +248,32 @@ private fun DownloadPreview(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Button(onClick = onSaved) {
+            Button(
+                onClick = onSaved,
+                enabled = saveStatus != DownloadSaveStatus.Saving
+            ) {
                 Text("저장")
             }
-            TextButton(onClick = onCancel) {
+            TextButton(
+                onClick = onCancel,
+                enabled = saveStatus != DownloadSaveStatus.Saving
+            ) {
                 Text("취소")
+            }
+        }
+        downloadSaveStatusMessage(saveStatus)?.let { message ->
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (saveStatus == DownloadSaveStatus.Saving) {
+                    CircularProgressIndicator()
+                }
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
