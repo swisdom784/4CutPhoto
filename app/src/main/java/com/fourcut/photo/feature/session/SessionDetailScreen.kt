@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,10 +62,12 @@ fun SessionDetailScreen(
     onSaveTags: (List<String>) -> Unit,
     onDeleteTagRequested: (String) -> Unit,
     onExportToGallery: () -> Unit,
+    onDeleteSession: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isEditingTags by remember { mutableStateOf(false) }
     var tagQuery by remember { mutableStateOf("") }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val editingTags = remember { mutableStateListOf<String>() }
 
     LaunchedEffect(tagNames) {
@@ -158,6 +161,9 @@ fun SessionDetailScreen(
                 ) {
                     Text("Save to device gallery")
                 }
+                TextButton(onClick = { showDeleteDialog = true }) {
+                    Text("Delete session")
+                }
             }
         }
         exportMessage?.takeIf { it.isNotBlank() }?.let {
@@ -177,6 +183,29 @@ fun SessionDetailScreen(
                 MediaTile(item)
             }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete session?") },
+            text = { Text("This removes the saved photos, videos, and people tags for this session from the app.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDeleteSession()
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

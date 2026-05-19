@@ -45,6 +45,9 @@ interface SessionDao {
     @Query("DELETE FROM session_tag_cross_ref WHERE sessionId = :sessionId")
     suspend fun deleteTagsForSession(sessionId: Long)
 
+    @Query("DELETE FROM photo_sessions WHERE id = :sessionId")
+    suspend fun deleteSessionById(sessionId: Long)
+
     @Transaction
     @Query("SELECT * FROM photo_sessions WHERE id = :sessionId")
     suspend fun getSessionWithDetails(sessionId: Long): SessionWithDetails

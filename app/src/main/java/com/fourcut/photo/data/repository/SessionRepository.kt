@@ -119,6 +119,14 @@ class SessionRepository(
         sessionDao.updateSession(saved.copy(updatedAt = now))
     }
 
+    suspend fun deleteSession(
+        sessionId: Long,
+        deleteMedia: suspend (Long) -> Unit
+    ) {
+        sessionDao.deleteSessionById(sessionId)
+        deleteMedia(sessionId)
+    }
+
     private suspend fun nextSessionIndexForDay(capturedAt: Long): Int {
         val start = ZonedDateTime.ofInstant(Instant.ofEpochMilli(capturedAt), zoneId)
             .toLocalDate()

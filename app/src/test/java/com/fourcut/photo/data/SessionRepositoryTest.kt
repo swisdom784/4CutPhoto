@@ -11,6 +11,7 @@ import com.fourcut.photo.data.repository.TagRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -117,5 +118,31 @@ class SessionRepositoryTest {
         val saved = db.sessionDao().getSessionWithDetails(sessionId)
 
         assertEquals(listOf("Hajin", "Minji"), saved.tags.map { it.name }.sorted())
+    }
+
+    @Test
+    fun deleteSessionRemovesSessionAndDeletesStoredMedia() = runTest {
+        val deletedSessionIds = mutableListOf<Long>()
+        val sessionId = sessionRepository.saveSession(
+            capturedAt = 500L,
+            sourceQrUrl = "https://example.com/qr",
+            sourceHost = "example.com",
+            sourceLabel = "Example Booth",
+            media = listOf(SaveMediaInput(MediaType.IMAGE, "path/image.jpg", "image/jpeg", "image.jpg")),
+            tagNames = listOf("Hajin")
+        )
+
+        sessionRepository.deleteSession(
+            sessionId = sessionId,
+            deleteMedia = { deletedSessionIds.add(it) }
+        )
+
+        val sessionsForDay = db.sessionDao().getSessionsForDay(
+            startMillis = 0L,
+            endMillis = 86_400_000L
+        )
+
+        assertTrue(sessionsForDay.isEmpty())
+        assertEquals(listOf(sessionId), deletedSessionIds)
     }
 }

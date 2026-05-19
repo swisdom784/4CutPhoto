@@ -138,6 +138,17 @@ fun FourCutPhotoApp() {
                             detailExportMessage = "Could not save to the device gallery. Please try again."
                         }
                     }
+                },
+                onDeleteSession = {
+                    scope.launch {
+                        sessionRepository.deleteSession(selectedSession.session.id) { sessionId ->
+                            withContext(Dispatchers.IO) {
+                                mediaStorage.deleteSession(sessionId)
+                            }
+                        }
+                        selectedSessionId = null
+                        detailExportMessage = null
+                    }
                 }
             )
         } else if (detailSessionId != null) {
