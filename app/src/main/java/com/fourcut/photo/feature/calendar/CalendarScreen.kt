@@ -14,9 +14,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,8 +43,10 @@ data class CalendarSessionUiModel(
 
 @Composable
 fun CalendarScreen(
-    days: List<CalendarDayUiModel>,
+    month: CalendarMonthUiModel,
     sessionsForSelectedDay: List<CalendarSessionUiModel>,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
     onDaySelected: (Int) -> Unit,
     onSessionSelected: (Long) -> Unit,
     modifier: Modifier = Modifier
@@ -55,45 +59,113 @@ fun CalendarScreen(
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         item {
-            Text(
-                text = "Calendar",
-                style = MaterialTheme.typography.headlineMedium
+            CalendarHeader(
+                monthLabel = month.monthLabel,
+                onPreviousMonth = onPreviousMonth,
+                onNextMonth = onNextMonth
             )
         }
         item {
             CalendarGrid(
-                days = days,
+                leadingBlankCount = month.leadingBlankCount,
+                days = month.days,
                 onDaySelected = onDaySelected
             )
         }
-        items(
-            items = sessionsForSelectedDay,
-            key = { it.id }
-        ) { session ->
-            CalendarSessionRow(
-                session = session,
-                onClick = { onSessionSelected(session.id) }
+        if (sessionsForSelectedDay.isEmpty()) {
+            item {
+                CalendarEmptyState()
+            }
+        } else {
+            items(
+                items = sessionsForSelectedDay,
+                key = { it.id }
+            ) { session ->
+                CalendarSessionRow(
+                    session = session,
+                    onClick = { onSessionSelected(session.id) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarHeader(
+    monthLabel: String,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = "Calendar",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Text(
+                text = monthLabel,
+                style = MaterialTheme.typography.headlineSmall
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(
+                onClick = onPreviousMonth,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            ) {
+                Text("Prev")
+            }
+            TextButton(
+                onClick = onNextMonth,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            ) {
+                Text("Next")
+            }
         }
     }
 }
 
 @Composable
 private fun CalendarGrid(
+    leadingBlankCount: Int,
     days: List<CalendarDayUiModel>,
     onDaySelected: (Int) -> Unit
 ) {
+    val cells = List(leadingBlankCount) { null } + days
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        days.chunked(7).forEach { week ->
+        cells.chunked(7).forEach { week ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 week.forEach { day ->
-                    CalendarDayCell(
-                        day = day,
-                        onClick = { onDaySelected(day.dayOfMonth) },
-                        modifier = Modifier.weight(1f)
+                    if (day == null) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(1f)
+                        )
+                    } else {
+                        CalendarDayCell(
+                            day = day,
+                            onClick = { onDaySelected(day.dayOfMonth) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                repeat(7 - week.size) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
                     )
                 }
             }
@@ -137,6 +209,31 @@ private fun CalendarDayCell(
                         .fillMaxWidth(0.12f)
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun CalendarEmptyState() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(8.dp),
+        tonalElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = "No sessions on this day",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = "Saved QR sessions from this date will appear here separately.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

@@ -27,9 +27,9 @@ import com.fourcut.photo.data.local.session.SessionWithDetails
 import com.fourcut.photo.data.repository.SessionRepository
 import com.fourcut.photo.data.repository.TagRepository
 import com.fourcut.photo.feature.download.DownloadFlowScreen
-import com.fourcut.photo.feature.calendar.CalendarDayUiModel
 import com.fourcut.photo.feature.calendar.CalendarScreen
 import com.fourcut.photo.feature.calendar.CalendarSessionUiModel
+import com.fourcut.photo.feature.calendar.buildCalendarMonthUiModel
 import com.fourcut.photo.feature.gallery.GalleryDateGroupUiModel
 import com.fourcut.photo.feature.gallery.GalleryScreen
 import com.fourcut.photo.feature.gallery.GallerySessionUiModel
@@ -153,16 +153,19 @@ fun FourCutPhotoApp() {
                 )
 
                 AppDestination.Calendar -> CalendarScreen(
-                    days = (1..selectedCalendarDate.lengthOfMonth()).map { day ->
-                        CalendarDayUiModel(
-                            dayOfMonth = day,
-                            hasSessions = sessions.any { it.localDate().dayOfMonth == day },
-                            isSelected = day == selectedCalendarDate.dayOfMonth
-                        )
-                    },
+                    month = buildCalendarMonthUiModel(
+                        selectedDate = selectedCalendarDate,
+                        sessionDates = sessions.map { it.localDate() }
+                    ),
                     sessionsForSelectedDay = sessions
                         .filter { it.localDate() == selectedCalendarDate }
                         .map { it.toCalendarSessionUiModel() },
+                    onPreviousMonth = {
+                        selectedCalendarDate = selectedCalendarDate.minusMonths(1)
+                    },
+                    onNextMonth = {
+                        selectedCalendarDate = selectedCalendarDate.plusMonths(1)
+                    },
                     onDaySelected = { day ->
                         selectedCalendarDate = selectedCalendarDate.withDayOfMonth(day)
                     },

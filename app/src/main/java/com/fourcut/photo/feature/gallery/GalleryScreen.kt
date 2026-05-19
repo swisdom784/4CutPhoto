@@ -56,10 +56,17 @@ fun GalleryScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text(
-                text = "Gallery",
-                style = MaterialTheme.typography.headlineMedium
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "Gallery",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Text(
+                    text = "Each QR save stays as its own session.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         item {
             OutlinedTextField(
@@ -69,6 +76,11 @@ fun GalleryScreen(
                 singleLine = true,
                 placeholder = { Text("Search people") }
             )
+        }
+        galleryEmptyState(query, groups.size)?.let { state ->
+            item {
+                GalleryEmptyStateCard(state)
+            }
         }
         groups.forEach { group ->
             item(key = "${group.yearLabel}-${group.dateLabel}") {
@@ -93,6 +105,39 @@ fun GalleryScreen(
                     onClick = { onSessionSelected(session.id) }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun GalleryEmptyStateCard(state: GalleryEmptyState) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = when (state) {
+                    GalleryEmptyState.NoSessions -> "No saved sessions yet"
+                    GalleryEmptyState.NoSearchResults -> "No matching people tags"
+                },
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = when (state) {
+                    GalleryEmptyState.NoSessions ->
+                        "Scan a photo booth QR code to start building your four-cut archive."
+                    GalleryEmptyState.NoSearchResults ->
+                        "Try another name, or add the person tag while saving or editing a session."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
