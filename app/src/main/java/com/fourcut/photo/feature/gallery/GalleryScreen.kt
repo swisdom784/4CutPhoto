@@ -70,11 +70,11 @@ fun GalleryScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "Gallery",
+                    text = "갤러리",
                     style = MaterialTheme.typography.headlineMedium
                 )
                 Text(
-                    text = "Each QR save stays as its own session.",
+                    text = "QR 하나가 하나의 세션으로 따로 저장돼요.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -86,7 +86,7 @@ fun GalleryScreen(
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("Search people") }
+                placeholder = { Text("사람 태그 검색") }
             )
         }
         val tagSuggestions = galleryTagSuggestions(
@@ -193,7 +193,7 @@ private fun GallerySessionCard(
                     )
                 } else {
                     Text(
-                        text = if (session.hasVideo) "Video" else "Photo",
+                        text = if (session.hasVideo) "영상" else "사진",
                         style = MaterialTheme.typography.labelMedium
                     )
                 }

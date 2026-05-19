@@ -43,7 +43,7 @@ data class SessionDetailMediaUiModel(
 ) {
     val isVideo: Boolean = mimeType.startsWith("video/")
     val displayName: String = fileName.trim().ifBlank {
-        if (isVideo) "Video" else "Photo"
+        if (isVideo) "영상" else "사진"
     }
 }
 
@@ -83,7 +83,7 @@ fun SessionDetailScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         TextButton(onClick = onBack) {
-            Text("Back")
+            Text("뒤로")
         }
         Text(
             text = dateLabel,
@@ -102,7 +102,7 @@ fun SessionDetailScreen(
             )
         }
         Text(
-            text = if (tagNames.isEmpty()) "No people tags" else tagNames.joinToString(prefix = "#", separator = " #"),
+            text = if (tagNames.isEmpty()) "사람 태그 없음" else tagNames.joinToString(prefix = "#", separator = " #"),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -141,10 +141,10 @@ fun SessionDetailScreen(
                         isEditingTags = false
                     }
                 ) {
-                    Text("Save tags")
+                    Text("태그 저장")
                 }
                 TextButton(onClick = { isEditingTags = false }) {
-                    Text("Cancel")
+                    Text("취소")
                 }
             }
         } else {
@@ -153,16 +153,16 @@ fun SessionDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(onClick = { isEditingTags = true }) {
-                    Text("Edit tags")
+                    Text("태그 수정")
                 }
                 TextButton(
                     onClick = onExportToGallery,
                     enabled = media.isNotEmpty()
                 ) {
-                    Text("Save to device gallery")
+                    Text("기기 갤러리에 저장")
                 }
                 TextButton(onClick = { showDeleteDialog = true }) {
-                    Text("Delete session")
+                    Text("세션 삭제")
                 }
             }
         }
@@ -188,8 +188,8 @@ fun SessionDetailScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete session?") },
-            text = { Text("This removes the saved photos, videos, and people tags for this session from the app.") },
+            title = { Text("세션을 삭제할까요?") },
+            text = { Text("이 세션의 사진, 영상, 사람 태그 기록이 앱에서 삭제돼요.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -197,12 +197,12 @@ fun SessionDetailScreen(
                         onDeleteSession()
                     }
                 ) {
-                    Text("Delete")
+                    Text("삭제")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text("취소")
                 }
             }
         )
@@ -230,7 +230,7 @@ private fun MediaTile(media: SessionDetailMediaUiModel) {
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = "Video",
+                    text = "영상",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(

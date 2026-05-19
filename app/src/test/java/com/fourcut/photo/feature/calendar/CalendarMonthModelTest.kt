@@ -12,7 +12,7 @@ class CalendarMonthModelTest {
             sessionDates = emptyList()
         )
 
-        assertEquals("May 2026", model.monthLabel)
+        assertEquals("2026년 5월", model.monthLabel)
         assertEquals(5, model.leadingBlankCount)
         assertEquals(31, model.days.size)
     }

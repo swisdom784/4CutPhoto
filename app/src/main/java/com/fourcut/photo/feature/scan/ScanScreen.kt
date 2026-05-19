@@ -4,10 +4,19 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -64,15 +76,6 @@ fun ScanScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
-        ) {
-            Text("‹")
-        }
-
         if (hasCameraPermission) {
             CameraPreview(
                 onScanResult = { result ->
@@ -82,7 +85,7 @@ fun ScanScreen(
                             onQrDetected(result.value)
                         }
                         is QrScanResult.Unsupported -> {
-                            scanMessage = "This QR is not a download link."
+                            scanMessage = "다운로드 링크가 아닌 QR이에요."
                         }
                         QrScanResult.DuplicateIgnored,
                         QrScanResult.Ignored -> Unit
@@ -90,6 +93,7 @@ fun ScanScreen(
                 },
                 modifier = Modifier.fillMaxSize()
             )
+            ScanFrameOverlay(modifier = Modifier.fillMaxSize())
         } else {
             QuietStateCard(
                 kind = QuietStateKind.CameraPermission,
@@ -101,12 +105,100 @@ fun ScanScreen(
             )
         }
 
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "‹",
+                color = if (hasCameraPermission) Color.White else MaterialTheme.colorScheme.onSurface
+            )
+        }
+
         scanMessage?.let { message ->
             ScanMessageCard(
                 message = message,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(24.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScanFrameOverlay(modifier: Modifier = Modifier) {
+    val overlayColor = Color.Black.copy(alpha = 0.25f)
+    BoxWithConstraints(modifier = modifier) {
+        val scanSize = if (maxWidth < 340.dp) maxWidth - 48.dp else 292.dp
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(overlayColor)
+            ) {
+                Text(
+                    text = "4CutPhoto",
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 22.dp, end = 22.dp),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = "QR을 인식해주세요",
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 18.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(scanSize)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .background(overlayColor)
+                )
+                Box(
+                    modifier = Modifier
+                        .size(scanSize)
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(8.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(116.dp)
+                            .height(2.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .background(overlayColor)
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(overlayColor)
             )
         }
     }

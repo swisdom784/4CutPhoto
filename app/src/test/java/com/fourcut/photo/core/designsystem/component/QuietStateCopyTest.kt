@@ -8,17 +8,17 @@ class QuietStateCopyTest {
     fun galleryEmptyCopyInvitesFirstScan() {
         val copy = quietStateCopy(QuietStateKind.GalleryEmpty)
 
-        assertEquals("Start with one QR", copy.title)
-        assertEquals("Saved photo booth sessions will appear here by date, with each QR kept separate.", copy.message)
-        assertEquals("Open Scan", copy.primaryActionLabel)
+        assertEquals("첫 QR부터 시작해보세요", copy.title)
+        assertEquals("저장한 네컷사진 세션이 날짜별로 모이고, 같은 날의 QR도 각각 따로 보관돼요.", copy.message)
+        assertEquals("스캔 열기", copy.primaryActionLabel)
     }
 
     @Test
     fun gallerySearchCopySuggestsChangingTagSearch() {
         val copy = quietStateCopy(QuietStateKind.GallerySearchEmpty)
 
-        assertEquals("No matching people yet", copy.title)
-        assertEquals("Try another name or add that person tag while saving or editing a session.", copy.message)
+        assertEquals("일치하는 사람 태그가 없어요", copy.title)
+        assertEquals("다른 이름으로 검색하거나, 저장/수정할 때 새 사람 태그를 추가해보세요.", copy.message)
         assertEquals(null, copy.primaryActionLabel)
     }
 
@@ -26,8 +26,8 @@ class QuietStateCopyTest {
     fun calendarDayCopyKeepsSameDaySessionContext() {
         val copy = quietStateCopy(QuietStateKind.CalendarDayEmpty)
 
-        assertEquals("Nothing saved on this day", copy.title)
-        assertEquals("When you save several QR sessions on the same date, they will stay separated here.", copy.message)
+        assertEquals("이 날 저장된 기록이 없어요", copy.title)
+        assertEquals("같은 날 여러 QR을 저장해도 세션별로 나뉘어 여기에 표시돼요.", copy.message)
         assertEquals(null, copy.primaryActionLabel)
     }
 
@@ -35,8 +35,8 @@ class QuietStateCopyTest {
     fun cameraPermissionCopyShowsCameraAction() {
         val copy = quietStateCopy(QuietStateKind.CameraPermission)
 
-        assertEquals("Camera access needed", copy.title)
-        assertEquals("Allow the camera to scan photo booth QR codes as soon as the app opens.", copy.message)
-        assertEquals("Allow camera", copy.primaryActionLabel)
+        assertEquals("카메라 권한이 필요해요", copy.title)
+        assertEquals("앱을 열자마자 네컷사진 QR을 스캔할 수 있도록 카메라를 허용해주세요.", copy.message)
+        assertEquals("카메라 허용", copy.primaryActionLabel)
     }
 }

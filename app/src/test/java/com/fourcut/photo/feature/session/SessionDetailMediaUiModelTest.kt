@@ -38,6 +38,6 @@ class SessionDetailMediaUiModelTest {
             fileName = " "
         )
 
-        assertEquals("Video", media.displayName)
+        assertEquals("영상", media.displayName)
     }
 }

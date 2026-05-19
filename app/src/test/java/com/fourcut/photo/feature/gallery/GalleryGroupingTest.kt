@@ -34,7 +34,7 @@ class GalleryGroupingTest {
             zoneId = zoneId
         )
 
-        assertEquals("May 19", groups.first().dateLabel)
+        assertEquals("5월 19일", groups.first().dateLabel)
         assertEquals(listOf(3L, 2L), groups.first().sessions.map { it.id })
     }
 

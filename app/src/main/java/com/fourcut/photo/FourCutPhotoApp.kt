@@ -84,7 +84,7 @@ fun FourCutPhotoApp() {
         if (detailSessionId != null && selectedSession != null) {
             SessionDetailScreen(
                 dateLabel = selectedSession.detailDateLabel(),
-                sessionTitle = "Session ${selectedSession.session.sessionIndexForDay}",
+                sessionTitle = "세션 ${selectedSession.session.sessionIndexForDay}",
                 sourceLabel = selectedSession.session.sourceLabel,
                 tagNames = selectedSession.tags.map { it.name },
                 suggestedTags = detailSuggestedTags,
@@ -128,14 +128,14 @@ fun FourCutPhotoApp() {
                         }.onSuccess { summary ->
                             detailExportMessage = when {
                                 summary.exportedCount > 0 && summary.skippedMissingCount > 0 ->
-                                    "Saved ${summary.exportedCount} item(s). ${summary.skippedMissingCount} missing file(s) were skipped."
+                                    "${summary.exportedCount}개를 기기 갤러리에 저장했어요. 찾을 수 없는 ${summary.skippedMissingCount}개 파일은 건너뛰었어요."
                                 summary.exportedCount > 0 ->
-                                    "Saved ${summary.exportedCount} item(s) to the device gallery."
+                                    "${summary.exportedCount}개를 기기 갤러리에 저장했어요."
                                 else ->
-                                    "No local media files were available to export."
+                                    "내보낼 수 있는 로컬 미디어 파일이 없어요."
                             }
                         }.onFailure {
-                            detailExportMessage = "Could not save to the device gallery. Please try again."
+                            detailExportMessage = "기기 갤러리에 저장하지 못했어요. 다시 시도해주세요."
                         }
                     }
                 },
@@ -153,7 +153,7 @@ fun FourCutPhotoApp() {
             )
         } else if (detailSessionId != null) {
             Text(
-                text = "Session not found",
+                text = "세션을 찾을 수 없어요",
                 modifier = Modifier.align(Alignment.Center)
             )
         } else if (qrUrl != null) {
@@ -221,7 +221,7 @@ fun FourCutPhotoApp() {
 private val zoneId: ZoneId = ZoneId.systemDefault()
 private val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm").withZone(zoneId)
 private val yearFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy").withZone(zoneId)
-private val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d").withZone(zoneId)
+private val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("M월 d일").withZone(zoneId)
 
 private fun SessionWithDetails.localDate(): LocalDate {
     return Instant.ofEpochMilli(session.capturedAt).atZone(zoneId).toLocalDate()
@@ -230,7 +230,7 @@ private fun SessionWithDetails.localDate(): LocalDate {
 private fun SessionWithDetails.toCalendarSessionUiModel(): CalendarSessionUiModel {
     return CalendarSessionUiModel(
         id = session.id,
-        title = "Session ${session.sessionIndexForDay}",
+        title = "세션 ${session.sessionIndexForDay}",
         timeLabel = timeFormatter.format(Instant.ofEpochMilli(session.capturedAt)),
         sourceLabel = session.sourceLabel,
         sessionIndexForDay = session.sessionIndexForDay,
@@ -260,21 +260,21 @@ private fun SessionWithDetails.toGallerySessionUiModel(): GallerySessionUiModel 
     val photoCount = media.count { it.type.name == "IMAGE" }
     val videoCount = media.count { it.type.name == "VIDEO" }
     val summary = buildList {
-        if (photoCount > 0) add("$photoCount photo")
-        if (videoCount > 0) add("$videoCount video")
+        if (photoCount > 0) add("사진 ${photoCount}개")
+        if (videoCount > 0) add("영상 ${videoCount}개")
     }.joinToString(" · ")
 
     val coverMedia = media.firstOrNull { it.id == session.coverMediaId } ?: media.firstOrNull()
 
     return GallerySessionUiModel(
         id = session.id,
-        sessionTitle = "Session ${session.sessionIndexForDay}",
+        sessionTitle = "세션 ${session.sessionIndexForDay}",
         timeLabel = timeFormatter.format(Instant.ofEpochMilli(session.capturedAt)),
         sourceLabel = session.sourceLabel,
         coverPath = coverMedia?.localPath,
         tagNames = tags.map { it.name },
         hasVideo = videoCount > 0,
-        mediaSummary = summary.ifBlank { "No media" },
+        mediaSummary = summary.ifBlank { "미디어 없음" },
         coverMimeType = coverMedia?.mimeType
     )
 }

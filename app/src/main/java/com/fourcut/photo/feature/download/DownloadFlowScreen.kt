@@ -112,7 +112,7 @@ fun DownloadFlowScreen(
     ) {
         when (val state = uiState) {
             DownloadFlowUiState.Resolving -> Text(
-                text = "Preparing downloads...",
+                text = "다운로드를 준비하고 있어요...",
                 modifier = Modifier.align(Alignment.Center)
             )
 
@@ -175,7 +175,7 @@ fun DownloadFlowScreen(
             ) {
                 Text(state.message)
                 Button(onClick = onCancel) {
-                    Text("Back to Scan")
+                    Text("스캔으로 돌아가기")
                 }
             }
         }
@@ -200,7 +200,7 @@ private fun DownloadPreview(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Save session",
+            text = "세션 저장",
             style = MaterialTheme.typography.headlineSmall
         )
         Text(
@@ -239,10 +239,10 @@ private fun DownloadPreview(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(onClick = onSaved) {
-                Text("Save")
+                Text("저장")
             }
             TextButton(onClick = onCancel) {
-                Text("Cancel")
+                Text("취소")
             }
         }
     }
@@ -308,7 +308,7 @@ private fun DownloadWebViewFallback(
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            text = "Select downloads",
+            text = "다운로드 선택",
             style = MaterialTheme.typography.headlineSmall
         )
         Text(
@@ -353,10 +353,10 @@ private fun DownloadWebViewFallback(
                 enabled = capturedItems.isNotEmpty(),
                 onClick = { onReviewCaptured(capturedItems) }
             ) {
-                Text("Review captured items")
+                Text("담은 항목 확인")
             }
             TextButton(onClick = onCancel) {
-                Text("Cancel")
+                Text("취소")
             }
         }
     }

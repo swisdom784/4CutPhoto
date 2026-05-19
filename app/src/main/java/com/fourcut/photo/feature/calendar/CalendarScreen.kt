@@ -105,7 +105,7 @@ private fun CalendarHeader(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                text = "Calendar",
+                text = "캘린더",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -121,7 +121,7 @@ private fun CalendarHeader(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 )
             ) {
-                Text("Prev")
+                Text("이전")
             }
             TextButton(
                 onClick = onNextMonth,
@@ -129,7 +129,7 @@ private fun CalendarHeader(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 )
             ) {
-                Text("Next")
+                Text("다음")
             }
         }
     }
@@ -239,11 +239,11 @@ private fun CalendarSessionRow(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
-                text = session.title.ifBlank { "Session ${session.sessionIndexForDay}" },
+                text = session.title.ifBlank { "세션 ${session.sessionIndexForDay}" },
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = listOfNotNull(session.timeLabel, session.sourceLabel, "${session.mediaCount} media")
+                text = listOfNotNull(session.timeLabel, session.sourceLabel, "미디어 ${session.mediaCount}개")
                     .joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

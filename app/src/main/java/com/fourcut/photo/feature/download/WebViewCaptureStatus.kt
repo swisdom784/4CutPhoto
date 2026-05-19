@@ -8,11 +8,10 @@ internal sealed interface WebViewCaptureStatus {
 
 internal fun webViewCaptureStatusMessage(status: WebViewCaptureStatus): String {
     return when (status) {
-        WebViewCaptureStatus.Waiting -> "Tap the photo or video download button on the source page."
+        WebViewCaptureStatus.Waiting -> "원본 페이지에서 사진 또는 영상 다운로드 버튼을 눌러주세요."
         is WebViewCaptureStatus.Captured -> {
-            val itemLabel = if (status.itemCount == 1) "item" else "items"
-            "Captured ${status.itemCount} $itemLabel. Continue selecting downloads or review the session."
+            "${status.itemCount}개 항목을 담았어요. 더 선택하거나 세션을 검토해주세요."
         }
-        WebViewCaptureStatus.IgnoredUnsupported -> "That download was not a photo or video."
+        WebViewCaptureStatus.IgnoredUnsupported -> "사진이나 영상 파일이 아닌 다운로드예요."
     }
 }

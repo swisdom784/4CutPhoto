@@ -15,7 +15,7 @@ fun buildGalleryDateGroups(
     zoneId: ZoneId
 ): List<GalleryDateGroupUiModel> {
     val yearFormatter = DateTimeFormatter.ofPattern("yyyy", Locale.US).withZone(zoneId)
-    val dateFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.US).withZone(zoneId)
+    val dateFormatter = DateTimeFormatter.ofPattern("M월 d일", Locale.KOREAN).withZone(zoneId)
 
     return inputs
         .sortedByDescending { it.capturedAtMillis }

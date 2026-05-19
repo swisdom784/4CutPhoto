@@ -28,7 +28,7 @@ fun buildCalendarMonthUiModel(
     }
 
     return CalendarMonthUiModel(
-        monthLabel = selectedDate.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.US)),
+        monthLabel = selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN)),
         leadingBlankCount = firstDayOfMonth.dayOfWeek.value % 7,
         days = days
     )

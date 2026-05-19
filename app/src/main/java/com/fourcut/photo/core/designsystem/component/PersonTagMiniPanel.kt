@@ -98,7 +98,7 @@ fun PersonTagMiniPanel(
                     },
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium,
-                placeholder = { Text("Name") },
+                placeholder = { Text("이름") },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
                     onDone = {
@@ -121,16 +121,16 @@ fun PersonTagMiniPanel(
                         pendingDelete = null
                     }
                 ) {
-                    Text("Delete")
+                    Text("삭제")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { pendingDelete = null }) {
-                    Text("Cancel")
+                    Text("취소")
                 }
             },
-            title = { Text("Delete tag?") },
-            text = { Text("This removes the tag from all saved sessions.") }
+            title = { Text("태그를 삭제할까요?") },
+            text = { Text("저장된 모든 세션에서 이 태그가 제거돼요.") }
         )
     }
 }

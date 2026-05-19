@@ -5,11 +5,11 @@ import java.net.URI
 class DownloadResolver {
     suspend fun resolve(url: String): DownloadResult {
         val uri = runCatching { URI(url) }.getOrNull()
-            ?: return DownloadResult.Unsupported("Invalid URL")
+            ?: return DownloadResult.Unsupported("유효하지 않은 URL이에요.")
 
         val scheme = uri.scheme?.lowercase()
         if (scheme != "http" && scheme != "https") {
-            return DownloadResult.Unsupported("Only HTTP and HTTPS URLs are supported.")
+            return DownloadResult.Unsupported("HTTP 또는 HTTPS URL만 지원해요.")
         }
 
         val extension = mediaExtensionFromUrl(url)

@@ -8,20 +8,20 @@ class WebViewCaptureStatusTest {
     fun waitingStatusGuidesUserToTapDownloadButton() {
         val message = webViewCaptureStatusMessage(WebViewCaptureStatus.Waiting)
 
-        assertEquals("Tap the photo or video download button on the source page.", message)
+        assertEquals("원본 페이지에서 사진 또는 영상 다운로드 버튼을 눌러주세요.", message)
     }
 
     @Test
     fun capturedStatusShowsCapturedItemCount() {
         val message = webViewCaptureStatusMessage(WebViewCaptureStatus.Captured(itemCount = 2))
 
-        assertEquals("Captured 2 items. Continue selecting downloads or review the session.", message)
+        assertEquals("2개 항목을 담았어요. 더 선택하거나 세션을 검토해주세요.", message)
     }
 
     @Test
     fun ignoredStatusExplainsUnsupportedDownload() {
         val message = webViewCaptureStatusMessage(WebViewCaptureStatus.IgnoredUnsupported)
 
-        assertEquals("That download was not a photo or video.", message)
+        assertEquals("사진이나 영상 파일이 아닌 다운로드예요.", message)
     }
 }
