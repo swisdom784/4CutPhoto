@@ -33,6 +33,8 @@ import com.fourcut.photo.feature.calendar.buildCalendarMonthUiModel
 import com.fourcut.photo.feature.gallery.GalleryDateGroupUiModel
 import com.fourcut.photo.feature.gallery.GalleryScreen
 import com.fourcut.photo.feature.gallery.GallerySessionUiModel
+import com.fourcut.photo.feature.gallery.GalleryGroupingInput
+import com.fourcut.photo.feature.gallery.buildGalleryDateGroups
 import com.fourcut.photo.feature.scan.ScanScreen
 import com.fourcut.photo.feature.session.SessionDetailScreen
 import com.fourcut.photo.navigation.AppDestination
@@ -223,15 +225,15 @@ private fun SessionWithDetails.detailDateLabel(): String {
 }
 
 private fun List<SessionWithDetails>.toGalleryGroups(): List<GalleryDateGroupUiModel> {
-    return groupBy { dateFormatter.format(Instant.ofEpochMilli(it.session.capturedAt)) }
-        .map { (dateLabel, sessionsForDate) ->
-            val firstInstant = Instant.ofEpochMilli(sessionsForDate.first().session.capturedAt)
-            GalleryDateGroupUiModel(
-                yearLabel = yearFormatter.format(firstInstant),
-                dateLabel = dateLabel,
-                sessions = sessionsForDate.map { it.toGallerySessionUiModel() }
+    return buildGalleryDateGroups(
+        inputs = map {
+            GalleryGroupingInput(
+                capturedAtMillis = it.session.capturedAt,
+                session = it.toGallerySessionUiModel()
             )
-        }
+        },
+        zoneId = zoneId
+    )
 }
 
 private fun SessionWithDetails.toGallerySessionUiModel(): GallerySessionUiModel {
