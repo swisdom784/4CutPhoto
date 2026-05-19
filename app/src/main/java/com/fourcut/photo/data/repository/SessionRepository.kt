@@ -101,6 +101,24 @@ class SessionRepository(
         return sessionId
     }
 
+    suspend fun replaceSessionTags(
+        sessionId: Long,
+        tagNames: List<String>
+    ) {
+        val now = System.currentTimeMillis()
+        sessionDao.deleteTagsForSession(sessionId)
+        tagNames.asSequence()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+            .forEach { tagName ->
+                val tagId = tagRepository.getOrCreateTag(tagName, now)
+                sessionDao.insertSessionTag(SessionTagCrossRef(sessionId = sessionId, tagId = tagId))
+            }
+        val saved = sessionDao.getSessionWithDetails(sessionId).session
+        sessionDao.updateSession(saved.copy(updatedAt = now))
+    }
+
     private suspend fun nextSessionIndexForDay(capturedAt: Long): Int {
         val start = ZonedDateTime.ofInstant(Instant.ofEpochMilli(capturedAt), zoneId)
             .toLocalDate()

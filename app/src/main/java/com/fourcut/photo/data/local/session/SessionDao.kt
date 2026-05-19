@@ -42,6 +42,9 @@ interface SessionDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertSessionTag(crossRef: SessionTagCrossRef)
 
+    @Query("DELETE FROM session_tag_cross_ref WHERE sessionId = :sessionId")
+    suspend fun deleteTagsForSession(sessionId: Long)
+
     @Transaction
     @Query("SELECT * FROM photo_sessions WHERE id = :sessionId")
     suspend fun getSessionWithDetails(sessionId: Long): SessionWithDetails

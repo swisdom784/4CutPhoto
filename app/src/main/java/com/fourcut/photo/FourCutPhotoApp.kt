@@ -1,6 +1,8 @@
 package com.fourcut.photo
 
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -35,6 +37,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.launch
 
 @Composable
 fun FourCutPhotoApp() {
@@ -52,6 +55,13 @@ fun FourCutPhotoApp() {
     var galleryQuery by remember { mutableStateOf("") }
     var selectedSessionId by remember { mutableStateOf<Long?>(null) }
     var selectedCalendarDate by remember { mutableStateOf(LocalDate.now(zoneId)) }
+    var detailTagQuery by remember { mutableStateOf("") }
+    var detailSuggestedTags by remember { mutableStateOf<List<String>>(emptyList()) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(detailTagQuery) {
+        detailSuggestedTags = tagRepository.search(detailTagQuery).map { it.name }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         val qrUrl = pendingQrUrl
@@ -63,9 +73,22 @@ fun FourCutPhotoApp() {
                 sessionTitle = "Session ${selectedSession.session.sessionIndexForDay}",
                 sourceLabel = selectedSession.session.sourceLabel,
                 tagNames = selectedSession.tags.map { it.name },
+                suggestedTags = detailSuggestedTags,
                 mediaPaths = selectedSession.media.map { it.localPath },
                 onBack = { selectedSessionId = null },
-                onEditTags = {}
+                onTagQueryChange = { detailTagQuery = it },
+                onSaveTags = { tags ->
+                    scope.launch {
+                        sessionRepository.replaceSessionTags(selectedSession.session.id, tags)
+                    }
+                },
+                onDeleteTagRequested = { tagName ->
+                    scope.launch {
+                        tagRepository.search(tagName)
+                            .firstOrNull { it.name.equals(tagName, ignoreCase = true) }
+                            ?.let { tagRepository.deleteTag(it.id) }
+                    }
+                }
             )
         } else if (detailSessionId != null) {
             Text(

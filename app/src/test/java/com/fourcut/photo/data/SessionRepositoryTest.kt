@@ -100,4 +100,22 @@ class SessionRepositoryTest {
 
         assertEquals("media/sessions/$sessionId/original/image.jpg", saved.media.first().localPath)
     }
+
+    @Test
+    fun replaceSessionTagsRemovesOldTagsAndAppliesNewTags() = runTest {
+        val sessionId = sessionRepository.saveSession(
+            capturedAt = 400L,
+            sourceQrUrl = "https://example.com/qr",
+            sourceHost = "example.com",
+            sourceLabel = "Example Booth",
+            media = listOf(SaveMediaInput(MediaType.IMAGE, "path/image.jpg", "image/jpeg", "image.jpg")),
+            tagNames = listOf("Hajin", "JungHyun")
+        )
+
+        sessionRepository.replaceSessionTags(sessionId, listOf("Minji", "Hajin"))
+
+        val saved = db.sessionDao().getSessionWithDetails(sessionId)
+
+        assertEquals(listOf("Hajin", "Minji"), saved.tags.map { it.name }.sorted())
+    }
 }
