@@ -14,6 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.fourcut.photo.core.designsystem.component.FloatingNavMenu
 import com.fourcut.photo.feature.download.DownloadFlowScreen
+import com.fourcut.photo.feature.calendar.CalendarDayUiModel
+import com.fourcut.photo.feature.calendar.CalendarScreen
+import com.fourcut.photo.feature.calendar.CalendarSessionUiModel
 import com.fourcut.photo.feature.scan.ScanScreen
 import com.fourcut.photo.navigation.AppDestination
 
@@ -37,9 +40,36 @@ fun FourCutPhotoApp() {
                     onQrDetected = { pendingQrUrl = it }
                 )
 
-                AppDestination.Calendar -> Text(
-                    text = "Calendar",
-                    modifier = Modifier.align(Alignment.Center)
+                AppDestination.Calendar -> CalendarScreen(
+                    days = (1..35).map { day ->
+                        CalendarDayUiModel(
+                            dayOfMonth = day,
+                            hasSessions = day == 12 || day == 21,
+                            isSelected = day == 12
+                        )
+                    },
+                    sessionsForSelectedDay = listOf(
+                        CalendarSessionUiModel(
+                            id = 1L,
+                            title = "Session 1",
+                            timeLabel = "14:10",
+                            sourceLabel = "Photo booth",
+                            sessionIndexForDay = 1,
+                            tagNames = listOf("Hajin", "JungHyun"),
+                            mediaCount = 2
+                        ),
+                        CalendarSessionUiModel(
+                            id = 2L,
+                            title = "Session 2",
+                            timeLabel = "18:42",
+                            sourceLabel = "Life4Cuts",
+                            sessionIndexForDay = 2,
+                            tagNames = listOf("Hajin"),
+                            mediaCount = 2
+                        )
+                    ),
+                    onDaySelected = {},
+                    onSessionSelected = {}
                 )
 
                 AppDestination.Gallery -> Text(
