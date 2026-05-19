@@ -1,5 +1,9 @@
 package com.fourcut.photo.feature.scan
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,9 +17,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
+import java.util.concurrent.Executors
 
 @Composable
 fun ScanScreen(
@@ -23,6 +46,19 @@ fun ScanScreen(
     onQrDetected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasCameraPermission = granted
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -37,33 +73,133 @@ fun ScanScreen(
             Text("‹")
         }
 
-        Surface(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(24.dp),
-            shape = RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant
+        if (hasCameraPermission) {
+            CameraPreview(
+                onQrDetected = onQrDetected,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            PermissionRequestCard(
+                onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                onUseTestQr = { onQrDetected("https://example.com/photo.jpg") },
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+    }
+}
+
+@Composable
+private fun PermissionRequestCard(
+    onRequestPermission: () -> Unit,
+    onUseTestQr: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.padding(24.dp),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = "Scan QR",
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Text(
-                    text = "Camera preview will appear here.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Button(
-                    onClick = { onQrDetected("https://example.com/photo.jpg") }
-                ) {
-                    Text("Use test QR")
-                }
+            Text(
+                text = "Scan QR",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Text(
+                text = "Camera access is needed to scan photo booth QR codes.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Button(onClick = onRequestPermission) {
+                Text("Allow camera")
+            }
+            Button(onClick = onUseTestQr) {
+                Text("Use test QR")
             }
         }
     }
+}
+
+@androidx.annotation.OptIn(ExperimentalGetImage::class)
+@Composable
+private fun CameraPreview(
+    onQrDetected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    var isProcessing by remember { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraExecutor.shutdown()
+        }
+    }
+
+    AndroidView(
+        modifier = modifier,
+        factory = { viewContext ->
+            PreviewView(viewContext).apply {
+                scaleType = PreviewView.ScaleType.FILL_CENTER
+            }
+        },
+        update = { previewView ->
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+            cameraProviderFuture.addListener(
+                {
+                    val cameraProvider = cameraProviderFuture.get()
+                    val preview = Preview.Builder().build().also {
+                        it.setSurfaceProvider(previewView.surfaceProvider)
+                    }
+                    val scanner = BarcodeScanning.getClient()
+                    val analysis = ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+
+                    analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                        val mediaImage = imageProxy.image
+                        if (mediaImage == null) {
+                            imageProxy.close()
+                            return@setAnalyzer
+                        }
+
+                        val inputImage = InputImage.fromMediaImage(
+                            mediaImage,
+                            imageProxy.imageInfo.rotationDegrees
+                        )
+                        scanner.process(inputImage)
+                            .addOnSuccessListener { barcodes ->
+                                val rawValue = barcodes
+                                    .firstOrNull { it.format == Barcode.FORMAT_QR_CODE }
+                                    ?.rawValue
+                                if (
+                                    !isProcessing &&
+                                    rawValue != null &&
+                                    (rawValue.startsWith("http://") || rawValue.startsWith("https://"))
+                                ) {
+                                    isProcessing = true
+                                    onQrDetected(rawValue)
+                                }
+                            }
+                            .addOnCompleteListener {
+                                imageProxy.close()
+                            }
+                    }
+
+                    cameraProvider.unbindAll()
+                    cameraProvider.bindToLifecycle(
+                        lifecycleOwner,
+                        CameraSelector.DEFAULT_BACK_CAMERA,
+                        preview,
+                        analysis
+                    )
+                },
+                ContextCompat.getMainExecutor(context)
+            )
+        }
+    )
 }
