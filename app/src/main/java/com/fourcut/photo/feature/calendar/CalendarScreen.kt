@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -31,7 +32,8 @@ import com.fourcut.photo.core.designsystem.component.QuietStateKind
 data class CalendarDayUiModel(
     val dayOfMonth: Int,
     val hasSessions: Boolean,
-    val isSelected: Boolean
+    val isSelected: Boolean,
+    val sessionCount: Int = if (hasSessions) 1 else 0
 )
 
 data class CalendarSessionUiModel(
@@ -191,11 +193,7 @@ private fun CalendarDayCell(
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(8.dp),
-        color = if (day.isSelected) {
-            MaterialTheme.colorScheme.surfaceVariant
-        } else {
-            MaterialTheme.colorScheme.surface
-        }
+        color = MaterialTheme.colorScheme.background
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -205,15 +203,21 @@ private fun CalendarDayCell(
                 text = day.dayOfMonth.toString(),
                 style = MaterialTheme.typography.bodyMedium
             )
-            if (day.hasSessions) {
-                Box(
-                    modifier = Modifier
-                        .padding(top = 4.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.secondary)
-                        .aspectRatio(1f)
-                        .fillMaxWidth(0.12f)
-                )
+            if (day.sessionCount > 0) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    repeat(day.sessionCount) {
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.secondary)
+                                .size(3.dp)
+                        )
+                    }
+                }
             }
         }
     }

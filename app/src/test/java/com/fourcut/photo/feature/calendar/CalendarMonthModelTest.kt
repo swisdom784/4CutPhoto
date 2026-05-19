@@ -30,4 +30,20 @@ class CalendarMonthModelTest {
         assertEquals(true, model.days.first { it.dayOfMonth == 19 }.hasSessions)
         assertEquals(false, model.days.first { it.dayOfMonth == 18 }.hasSessions)
     }
+
+    @Test
+    fun monthModelCountsSessionsForEachDay() {
+        val model = buildCalendarMonthUiModel(
+            selectedDate = LocalDate.of(2026, 5, 19),
+            sessionDates = listOf(
+                LocalDate.of(2026, 5, 19),
+                LocalDate.of(2026, 5, 19),
+                LocalDate.of(2026, 5, 20)
+            )
+        )
+
+        assertEquals(2, model.days.first { it.dayOfMonth == 19 }.sessionCount)
+        assertEquals(1, model.days.first { it.dayOfMonth == 20 }.sessionCount)
+        assertEquals(0, model.days.first { it.dayOfMonth == 21 }.sessionCount)
+    }
 }

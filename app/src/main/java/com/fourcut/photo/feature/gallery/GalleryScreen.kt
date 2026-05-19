@@ -15,10 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -102,9 +103,22 @@ fun GalleryScreen(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     tagSuggestions.forEach { tagName ->
-                        SuggestionChip(
-                            onClick = { onQueryChange(tagName) },
-                            label = { Text(tagName) }
+                        val isSelected = query.trim().equals(tagName, ignoreCase = true)
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                onQueryChange(
+                                    galleryTagFilterAfterClick(
+                                        currentQuery = query,
+                                        tagName = tagName
+                                    )
+                                )
+                            },
+                            label = { Text(tagName) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                            )
                         )
                     }
                 }

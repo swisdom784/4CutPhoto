@@ -33,4 +33,24 @@ class GalleryTagSuggestionsTest {
 
         assertEquals(listOf("A", "B", "C", "D", "E", "F"), suggestions)
     }
+
+    @Test
+    fun clickingUnselectedTagAppliesFilter() {
+        val nextQuery = galleryTagFilterAfterClick(
+            currentQuery = "",
+            tagName = "하진"
+        )
+
+        assertEquals("하진", nextQuery)
+    }
+
+    @Test
+    fun clickingSelectedTagClearsFilter() {
+        val nextQuery = galleryTagFilterAfterClick(
+            currentQuery = "하진",
+            tagName = "하진"
+        )
+
+        assertEquals("", nextQuery)
+    }
 }

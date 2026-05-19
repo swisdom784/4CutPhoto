@@ -15,15 +15,17 @@ fun buildCalendarMonthUiModel(
     sessionDates: List<LocalDate>
 ): CalendarMonthUiModel {
     val firstDayOfMonth = selectedDate.withDayOfMonth(1)
-    val sessionDateSet = sessionDates.toSet()
     val visibleYearMonth = selectedDate.year to selectedDate.month
     val days = (1..selectedDate.lengthOfMonth()).map { day ->
         val date = selectedDate.withDayOfMonth(day)
+        val sessionCount = sessionDates.count { sessionDate ->
+            sessionDate == date && (sessionDate.year to sessionDate.month) == visibleYearMonth
+        }
         CalendarDayUiModel(
             dayOfMonth = day,
-            hasSessions = date in sessionDateSet &&
-                (date.year to date.month) == visibleYearMonth,
-            isSelected = day == selectedDate.dayOfMonth
+            hasSessions = sessionCount > 0,
+            isSelected = day == selectedDate.dayOfMonth,
+            sessionCount = sessionCount
         )
     }
 

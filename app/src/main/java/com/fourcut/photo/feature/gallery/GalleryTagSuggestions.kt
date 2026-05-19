@@ -16,3 +16,14 @@ fun galleryTagSuggestions(
         .take(limit)
         .toList()
 }
+
+fun galleryTagFilterAfterClick(
+    currentQuery: String,
+    tagName: String
+): String {
+    return if (currentQuery.trim().equals(tagName.trim(), ignoreCase = true)) {
+        ""
+    } else {
+        tagName
+    }
+}
