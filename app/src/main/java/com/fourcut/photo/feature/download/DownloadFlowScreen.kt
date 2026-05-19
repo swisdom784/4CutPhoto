@@ -159,11 +159,10 @@ fun DownloadFlowScreen(
 
             is DownloadFlowUiState.NeedsWebView -> DownloadWebViewFallback(
                 sourceUrl = state.sourceUrl,
-                onMediaCaptured = { media ->
-                    val currentItems = (uiState as? DownloadFlowUiState.Preview)?.items.orEmpty()
+                onReviewCaptured = { items ->
                     uiState = DownloadFlowUiState.Preview(
                         sourceUrl = sourceUrl,
-                        items = addCapturedPreviewMedia(currentItems, media)
+                        items = items
                     )
                 },
                 onCancel = onCancel
@@ -295,19 +294,25 @@ private fun DownloadableMedia.toPreviewMedia(): PreviewMedia {
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DownloadWebViewFallback(
     sourceUrl: String,
-    onMediaCaptured: (PreviewMedia) -> Unit,
+    onReviewCaptured: (List<PreviewMedia>) -> Unit,
     onCancel: () -> Unit
 ) {
+    var capturedItems by remember(sourceUrl) { mutableStateOf<List<PreviewMedia>>(emptyList()) }
+    var captureStatus by remember(sourceUrl) {
+        mutableStateOf<WebViewCaptureStatus>(WebViewCaptureStatus.Waiting)
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = "Select downloads",
             style = MaterialTheme.typography.headlineSmall
         )
         Text(
-            text = "Tap the photo or video download button on the source page. Captured items will move into preview.",
+            text = webViewCaptureStatusMessage(captureStatus),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -321,19 +326,38 @@ private fun DownloadWebViewFallback(
                     settings.javaScriptEnabled = true
                     setDownloadListener(
                         DownloadListener { url, _, contentDisposition, mimeType, _ ->
-                            captureWebViewDownload(
+                            val capturedMedia = captureWebViewDownload(
                                 url = url,
                                 contentDisposition = contentDisposition,
                                 mimeType = mimeType
-                            )?.let { onMediaCaptured(it.toPreviewMedia()) }
+                            )?.toPreviewMedia()
+
+                            if (capturedMedia == null) {
+                                captureStatus = WebViewCaptureStatus.IgnoredUnsupported
+                            } else {
+                                val nextItems = addCapturedPreviewMedia(capturedItems, capturedMedia)
+                                capturedItems = nextItems
+                                captureStatus = WebViewCaptureStatus.Captured(nextItems.size)
+                            }
                         }
                     )
                     loadUrl(sourceUrl)
                 }
             }
         )
-        TextButton(onClick = onCancel) {
-            Text("Cancel")
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                enabled = capturedItems.isNotEmpty(),
+                onClick = { onReviewCaptured(capturedItems) }
+            ) {
+                Text("Review captured items")
+            }
+            TextButton(onClick = onCancel) {
+                Text("Cancel")
+            }
         }
     }
 }

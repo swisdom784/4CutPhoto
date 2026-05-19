@@ -8,6 +8,11 @@
 - [ ] Non-URL QR shows unsupported state.
 - [ ] Direct image or video URL enters preview flow.
 - [ ] Non-direct URL enters WebView fallback.
+- [ ] WebView fallback shows waiting guidance before any download is captured.
+- [ ] WebView fallback keeps the source page open after a photo or video download is captured.
+- [ ] WebView fallback can capture multiple photo/video downloads from one QR before preview.
+- [ ] WebView fallback shows an unsupported-download message for non-photo/video files.
+- [ ] Review captured items opens the save preview with each captured item still separated.
 - [ ] Person tag mini panel filters existing tags.
 - [ ] Entering a new name creates and applies a person tag.
 - [ ] Long-press delete shows confirmation.
@@ -21,5 +26,8 @@
 - [ ] Session detail shows date and person tags.
 - [ ] Session detail shows session order and source hint when available.
 - [ ] Session detail allows tag editing.
+- [ ] Session detail exports saved photos and videos to the device gallery.
+- [ ] Real Life4Cuts QR download page works on a physical device.
+- [ ] Real Photoism QR download page works on a physical device.
 - [ ] The app uses a white-forward sand visual style with clear hierarchy and comfortable touch targets.
 - [ ] App remains usable after closing and reopening.
