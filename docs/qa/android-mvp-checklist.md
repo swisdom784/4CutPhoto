@@ -1,0 +1,25 @@
+# 4CutPhoto Android MVP QA Checklist
+
+- [ ] App launches directly into Scan.
+- [ ] Floating menu expands upward from the bottom-right button.
+- [ ] Floating menu navigates to Scan, Calendar, and Gallery.
+- [ ] Camera permission request appears when needed.
+- [ ] QR scanner detects an HTTP or HTTPS QR once.
+- [ ] Non-URL QR shows unsupported state.
+- [ ] Direct image or video URL enters preview flow.
+- [ ] Non-direct URL enters WebView fallback.
+- [ ] Person tag mini panel filters existing tags.
+- [ ] Entering a new name creates and applies a person tag.
+- [ ] Long-press delete shows confirmation.
+- [ ] Confirmed tag deletion removes the tag from existing sessions.
+- [ ] Saving a session makes it appear in Gallery.
+- [ ] Two QR scans saved on the same day appear as two separate Gallery session cards.
+- [ ] A photo/video pair from one QR is not merged with another photo/video pair from another QR.
+- [ ] Long same-day Gallery groups remain readable and scroll smoothly.
+- [ ] Saving a session marks the date in Calendar.
+- [ ] Calendar selected-date list shows multiple same-day sessions separately.
+- [ ] Session detail shows date and person tags.
+- [ ] Session detail shows session order and source hint when available.
+- [ ] Session detail allows tag editing.
+- [ ] The app uses a white-forward sand visual style with clear hierarchy and comfortable touch targets.
+- [ ] App remains usable after closing and reopening.
