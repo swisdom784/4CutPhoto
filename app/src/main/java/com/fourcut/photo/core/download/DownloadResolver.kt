@@ -12,12 +12,9 @@ class DownloadResolver {
             return DownloadResult.Unsupported("Only HTTP and HTTPS URLs are supported.")
         }
 
-        val extension = url.substringBefore('?')
-            .substringBefore('#')
-            .substringAfterLast('.', missingDelimiterValue = "")
-            .lowercase()
+        val extension = mediaExtensionFromUrl(url)
 
-        val mimeType = mediaMimeTypes[extension]
+        val mimeType = mimeTypeForMediaExtension(extension)
         return if (mimeType != null) {
             DownloadResult.Automatic(
                 items = listOf(
@@ -40,15 +37,24 @@ class DownloadResolver {
 
         return fromPath ?: "download.$extension"
     }
-
-    private companion object {
-        val mediaMimeTypes = mapOf(
-            "jpg" to "image/jpeg",
-            "jpeg" to "image/jpeg",
-            "png" to "image/png",
-            "webp" to "image/webp",
-            "mp4" to "video/mp4",
-            "mov" to "video/quicktime"
-        )
-    }
 }
+
+internal fun mediaExtensionFromUrl(url: String): String {
+    return url.substringBefore('?')
+        .substringBefore('#')
+        .substringAfterLast('.', missingDelimiterValue = "")
+        .lowercase()
+}
+
+internal fun mimeTypeForMediaExtension(extension: String): String? {
+    return mediaMimeTypes[extension.lowercase()]
+}
+
+private val mediaMimeTypes = mapOf(
+    "jpg" to "image/jpeg",
+    "jpeg" to "image/jpeg",
+    "png" to "image/png",
+    "webp" to "image/webp",
+    "mp4" to "video/mp4",
+    "mov" to "video/quicktime"
+)

@@ -1,7 +1,6 @@
 package com.fourcut.photo.feature.download
 
 import android.webkit.DownloadListener
-import android.webkit.URLUtil
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
@@ -34,8 +33,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.fourcut.photo.core.designsystem.component.PersonTagMiniPanel
+import com.fourcut.photo.core.download.DownloadableMedia
 import com.fourcut.photo.core.download.DownloadResolver
 import com.fourcut.photo.core.download.DownloadResult
+import com.fourcut.photo.core.download.captureWebViewDownload
 import com.fourcut.photo.core.media.AppMediaStorage
 import com.fourcut.photo.core.tag.addSelectedTag
 import com.fourcut.photo.core.tag.removeSelectedTag
@@ -159,7 +160,11 @@ fun DownloadFlowScreen(
             is DownloadFlowUiState.NeedsWebView -> DownloadWebViewFallback(
                 sourceUrl = state.sourceUrl,
                 onMediaCaptured = { media ->
-                    uiState = DownloadFlowUiState.Preview(sourceUrl, listOf(media))
+                    val currentItems = (uiState as? DownloadFlowUiState.Preview)?.items.orEmpty()
+                    uiState = DownloadFlowUiState.Preview(
+                        sourceUrl = sourceUrl,
+                        items = addCapturedPreviewMedia(currentItems, media)
+                    )
                 },
                 onCancel = onCancel
             )
@@ -244,6 +249,14 @@ private fun DownloadPreview(
     }
 }
 
+internal fun addCapturedPreviewMedia(
+    current: List<PreviewMedia>,
+    captured: PreviewMedia
+): List<PreviewMedia> {
+    if (current.any { it.localPath == captured.localPath }) return current
+    return current + captured
+}
+
 private fun MutableList<String>.replaceWith(tags: List<String>) {
     clear()
     addAll(tags)
@@ -274,6 +287,14 @@ private suspend fun SaveMediaInput.persistToAppStorage(
     return copy(localPath = file.absolutePath)
 }
 
+private fun DownloadableMedia.toPreviewMedia(): PreviewMedia {
+    return PreviewMedia(
+        localPath = url,
+        mimeType = mimeType,
+        fileName = suggestedFileName
+    )
+}
+
 @Composable
 private fun DownloadWebViewFallback(
     sourceUrl: String,
@@ -285,6 +306,11 @@ private fun DownloadWebViewFallback(
             text = "Select downloads",
             style = MaterialTheme.typography.headlineSmall
         )
+        Text(
+            text = "Tap the photo or video download button on the source page. Captured items will move into preview.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         AndroidView(
             modifier = Modifier
                 .weight(1f)
@@ -295,16 +321,11 @@ private fun DownloadWebViewFallback(
                     settings.javaScriptEnabled = true
                     setDownloadListener(
                         DownloadListener { url, _, contentDisposition, mimeType, _ ->
-                            val fileName = URLUtil.guessFileName(url, contentDisposition, mimeType)
-                            if (mimeType.startsWith("image/") || mimeType.startsWith("video/")) {
-                                onMediaCaptured(
-                                    PreviewMedia(
-                                        localPath = url,
-                                        mimeType = mimeType,
-                                        fileName = fileName
-                                    )
-                                )
-                            }
+                            captureWebViewDownload(
+                                url = url,
+                                contentDisposition = contentDisposition,
+                                mimeType = mimeType
+                            )?.let { onMediaCaptured(it.toPreviewMedia()) }
                         }
                     )
                     loadUrl(sourceUrl)
