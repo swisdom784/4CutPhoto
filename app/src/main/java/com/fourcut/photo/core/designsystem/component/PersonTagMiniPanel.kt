@@ -39,6 +39,7 @@ fun PersonTagMiniPanel(
     query: String,
     onQueryChange: (String) -> Unit,
     onTagSelected: (String) -> Unit,
+    onSelectedTagRemoved: (String) -> Unit = {},
     onCreateTag: (String) -> Unit,
     onDeleteTagRequested: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -61,7 +62,7 @@ fun PersonTagMiniPanel(
             selectedTags.forEach { tag ->
                 InputChip(
                     selected = true,
-                    onClick = { onTagSelected(tag) },
+                    onClick = { onSelectedTagRemoved(tag) },
                     label = { Text(tag) }
                 )
             }

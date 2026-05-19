@@ -37,6 +37,8 @@ import com.fourcut.photo.core.designsystem.component.PersonTagMiniPanel
 import com.fourcut.photo.core.download.DownloadResolver
 import com.fourcut.photo.core.download.DownloadResult
 import com.fourcut.photo.core.media.AppMediaStorage
+import com.fourcut.photo.core.tag.addSelectedTag
+import com.fourcut.photo.core.tag.removeSelectedTag
 import com.fourcut.photo.data.local.session.MediaType
 import com.fourcut.photo.data.repository.SaveMediaInput
 import com.fourcut.photo.data.repository.SessionRepository
@@ -119,12 +121,15 @@ fun DownloadFlowScreen(
                 tagQuery = tagQuery,
                 onQueryChange = { tagQuery = it },
                 onTagSelected = { tag ->
-                    if (selectedTags.none { it.equals(tag, ignoreCase = true) }) selectedTags.add(tag)
+                    selectedTags.replaceWith(addSelectedTag(selectedTags, tag))
+                },
+                onSelectedTagRemoved = { tag ->
+                    selectedTags.replaceWith(removeSelectedTag(selectedTags, tag))
                 },
                 onCreateTag = { tag ->
-                    val normalized = tag.trim()
-                    if (normalized.isNotBlank() && selectedTags.none { it.equals(normalized, ignoreCase = true) }) {
-                        selectedTags.add(normalized)
+                    val nextTags = addSelectedTag(selectedTags, tag)
+                    if (nextTags != selectedTags) {
+                        selectedTags.replaceWith(nextTags)
                         tagQuery = ""
                     }
                 },
@@ -182,6 +187,7 @@ private fun DownloadPreview(
     tagQuery: String,
     onQueryChange: (String) -> Unit,
     onTagSelected: (String) -> Unit,
+    onSelectedTagRemoved: (String) -> Unit,
     onCreateTag: (String) -> Unit,
     onSaved: () -> Unit,
     onCancel: () -> Unit
@@ -220,6 +226,7 @@ private fun DownloadPreview(
             query = tagQuery,
             onQueryChange = onQueryChange,
             onTagSelected = onTagSelected,
+            onSelectedTagRemoved = onSelectedTagRemoved,
             onCreateTag = onCreateTag,
             onDeleteTagRequested = {}
         )
@@ -235,6 +242,11 @@ private fun DownloadPreview(
             }
         }
     }
+}
+
+private fun MutableList<String>.replaceWith(tags: List<String>) {
+    clear()
+    addAll(tags)
 }
 
 private fun PreviewMedia.toSaveMediaInput(): SaveMediaInput {

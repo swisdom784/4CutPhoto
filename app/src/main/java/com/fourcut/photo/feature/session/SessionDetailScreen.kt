@@ -31,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.fourcut.photo.core.designsystem.component.PersonTagMiniPanel
+import com.fourcut.photo.core.tag.addSelectedTag
+import com.fourcut.photo.core.tag.removeSelectedTag
 import coil.compose.AsyncImage
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -98,14 +100,15 @@ fun SessionDetailScreen(
                     onTagQueryChange(it)
                 },
                 onTagSelected = { tag ->
-                    if (editingTags.none { it.equals(tag, ignoreCase = true) }) {
-                        editingTags.add(tag)
-                    }
+                    editingTags.replaceWith(addSelectedTag(editingTags, tag))
+                },
+                onSelectedTagRemoved = { tag ->
+                    editingTags.replaceWith(removeSelectedTag(editingTags, tag))
                 },
                 onCreateTag = { tag ->
-                    val normalized = tag.trim()
-                    if (normalized.isNotBlank() && editingTags.none { it.equals(normalized, ignoreCase = true) }) {
-                        editingTags.add(normalized)
+                    val nextTags = addSelectedTag(editingTags, tag)
+                    if (nextTags != editingTags) {
+                        editingTags.replaceWith(nextTags)
                         tagQuery = ""
                         onTagQueryChange("")
                     }
@@ -144,6 +147,11 @@ fun SessionDetailScreen(
             }
         }
     }
+}
+
+private fun MutableList<String>.replaceWith(tags: List<String>) {
+    clear()
+    addAll(tags)
 }
 
 @Composable
