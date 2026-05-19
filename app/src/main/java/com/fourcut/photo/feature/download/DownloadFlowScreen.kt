@@ -1,6 +1,8 @@
 package com.fourcut.photo.feature.download
 
 import android.webkit.DownloadListener
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
@@ -337,6 +339,7 @@ private fun DownloadWebViewFallback(
     var captureStatus by remember(sourceUrl) {
         mutableStateOf<WebViewCaptureStatus>(WebViewCaptureStatus.Waiting)
     }
+    var pageStatus by remember(sourceUrl) { mutableStateOf(WebViewPageStatus.Loading) }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
@@ -348,13 +351,48 @@ private fun DownloadWebViewFallback(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        webViewPageStatusMessage(pageStatus)?.let { message ->
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (pageStatus == WebViewPageStatus.Loading) {
+                    CircularProgressIndicator()
+                }
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
         AndroidView(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
             factory = { context ->
                 WebView(context).apply {
-                    webViewClient = WebViewClient()
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                            pageStatus = WebViewPageStatus.Loading
+                        }
+
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            if (pageStatus != WebViewPageStatus.Failed) {
+                                pageStatus = WebViewPageStatus.Loaded
+                            }
+                        }
+
+                        override fun onReceivedError(
+                            view: WebView?,
+                            request: WebResourceRequest?,
+                            error: WebResourceError?
+                        ) {
+                            if (request?.isForMainFrame != false) {
+                                pageStatus = WebViewPageStatus.Failed
+                            }
+                        }
+                    }
                     settings.javaScriptEnabled = true
                     setDownloadListener(
                         DownloadListener { url, _, contentDisposition, mimeType, _ ->
