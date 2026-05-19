@@ -44,10 +44,12 @@ fun SessionDetailScreen(
     tagNames: List<String>,
     suggestedTags: List<String>,
     mediaPaths: List<String>,
+    exportMessage: String?,
     onBack: () -> Unit,
     onTagQueryChange: (String) -> Unit,
     onSaveTags: (List<String>) -> Unit,
     onDeleteTagRequested: (String) -> Unit,
+    onExportToGallery: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isEditingTags by remember { mutableStateOf(false) }
@@ -132,9 +134,27 @@ fun SessionDetailScreen(
                 }
             }
         } else {
-            Button(onClick = { isEditingTags = true }) {
-                Text("Edit tags")
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(onClick = { isEditingTags = true }) {
+                    Text("Edit tags")
+                }
+                TextButton(
+                    onClick = onExportToGallery,
+                    enabled = mediaPaths.isNotEmpty()
+                ) {
+                    Text("Save to device gallery")
+                }
             }
+        }
+        exportMessage?.takeIf { it.isNotBlank() }?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 132.dp),

@@ -19,6 +19,9 @@ import androidx.compose.ui.unit.dp
 import androidx.room.Room
 import com.fourcut.photo.core.designsystem.component.FloatingNavMenu
 import com.fourcut.photo.core.media.AppMediaStorage
+import com.fourcut.photo.core.media.SystemGalleryExportMedia
+import com.fourcut.photo.core.media.SystemGalleryExporter
+import com.fourcut.photo.core.media.exportSessionMediaToSystemGallery
 import com.fourcut.photo.data.local.FourCutDatabase
 import com.fourcut.photo.data.local.session.SessionWithDetails
 import com.fourcut.photo.data.repository.SessionRepository
@@ -37,7 +40,9 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun FourCutPhotoApp() {
@@ -48,6 +53,7 @@ fun FourCutPhotoApp() {
     val tagRepository = remember { TagRepository(database.personTagDao()) }
     val sessionRepository = remember { SessionRepository(database.sessionDao(), tagRepository) }
     val mediaStorage = remember { AppMediaStorage(context) }
+    val galleryExporter = remember { SystemGalleryExporter(context) }
     val sessions by database.sessionDao().observeSessionsWithDetails().collectAsState(initial = emptyList())
 
     var currentDestination by remember { mutableStateOf(AppDestination.Scan) }
@@ -57,10 +63,15 @@ fun FourCutPhotoApp() {
     var selectedCalendarDate by remember { mutableStateOf(LocalDate.now(zoneId)) }
     var detailTagQuery by remember { mutableStateOf("") }
     var detailSuggestedTags by remember { mutableStateOf<List<String>>(emptyList()) }
+    var detailExportMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(detailTagQuery) {
         detailSuggestedTags = tagRepository.search(detailTagQuery).map { it.name }
+    }
+
+    LaunchedEffect(selectedSessionId) {
+        detailExportMessage = null
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -75,6 +86,7 @@ fun FourCutPhotoApp() {
                 tagNames = selectedSession.tags.map { it.name },
                 suggestedTags = detailSuggestedTags,
                 mediaPaths = selectedSession.media.map { it.localPath },
+                exportMessage = detailExportMessage,
                 onBack = { selectedSessionId = null },
                 onTagQueryChange = { detailTagQuery = it },
                 onSaveTags = { tags ->
@@ -87,6 +99,35 @@ fun FourCutPhotoApp() {
                         tagRepository.search(tagName)
                             .firstOrNull { it.name.equals(tagName, ignoreCase = true) }
                             ?.let { tagRepository.deleteTag(it.id) }
+                    }
+                },
+                onExportToGallery = {
+                    scope.launch {
+                        runCatching {
+                            withContext(Dispatchers.IO) {
+                                exportSessionMediaToSystemGallery(
+                                    media = selectedSession.media.map {
+                                        SystemGalleryExportMedia(
+                                            localPath = it.localPath,
+                                            fileName = it.fileName,
+                                            mimeType = it.mimeType
+                                        )
+                                    },
+                                    exporter = galleryExporter
+                                )
+                            }
+                        }.onSuccess { summary ->
+                            detailExportMessage = when {
+                                summary.exportedCount > 0 && summary.skippedMissingCount > 0 ->
+                                    "Saved ${summary.exportedCount} item(s). ${summary.skippedMissingCount} missing file(s) were skipped."
+                                summary.exportedCount > 0 ->
+                                    "Saved ${summary.exportedCount} item(s) to the device gallery."
+                                else ->
+                                    "No local media files were available to export."
+                            }
+                        }.onFailure {
+                            detailExportMessage = "Could not save to the device gallery. Please try again."
+                        }
                     }
                 }
             )
