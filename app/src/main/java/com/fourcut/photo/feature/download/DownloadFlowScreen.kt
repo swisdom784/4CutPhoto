@@ -38,6 +38,7 @@ import com.fourcut.photo.core.download.DownloadableMedia
 import com.fourcut.photo.core.download.DownloadResolver
 import com.fourcut.photo.core.download.DownloadResult
 import com.fourcut.photo.core.download.captureWebViewDownload
+import com.fourcut.photo.core.download.openRemoteMediaStream
 import com.fourcut.photo.core.media.AppMediaStorage
 import com.fourcut.photo.core.tag.addSelectedTag
 import com.fourcut.photo.core.tag.removeSelectedTag
@@ -310,7 +311,7 @@ private suspend fun SaveMediaInput.persistToAppStorage(
     }
 
     val file = withContext(Dispatchers.IO) {
-        URL(localPath).openStream().use { input ->
+        URL(localPath).openRemoteMediaStream().use { input ->
             mediaStorage.saveOriginal(sessionId, fileName, input)
         }
     }
