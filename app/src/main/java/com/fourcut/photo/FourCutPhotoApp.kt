@@ -4,8 +4,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,6 +29,7 @@ import com.fourcut.photo.data.local.FourCutDatabase
 import com.fourcut.photo.data.local.session.SessionWithDetails
 import com.fourcut.photo.data.repository.SessionRepository
 import com.fourcut.photo.data.repository.TagRepository
+import com.fourcut.photo.debug.DebugDummyDataInjection
 import com.fourcut.photo.feature.download.DownloadFlowScreen
 import com.fourcut.photo.feature.calendar.CalendarScreen
 import com.fourcut.photo.feature.calendar.CalendarSessionUiModel
@@ -68,6 +72,7 @@ fun FourCutPhotoApp() {
     var detailTagQuery by remember { mutableStateOf("") }
     var detailSuggestedTags by remember { mutableStateOf<List<String>>(emptyList()) }
     var detailExportMessage by remember { mutableStateOf<String?>(null) }
+    var debugDummyMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(detailTagQuery) {
@@ -207,6 +212,43 @@ fun FourCutPhotoApp() {
                     onOpenScan = { currentDestination = AppDestination.Scan },
                     onSessionSelected = { selectedSessionId = it }
                 )
+            }
+        }
+
+        if (
+            DebugDummyDataInjection.isAvailable &&
+            detailSessionId == null &&
+            qrUrl == null &&
+            currentDestination == AppDestination.Scan
+        ) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 96.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                debugDummyMessage?.let { message ->
+                    Text(text = message)
+                }
+                Button(
+                    onClick = {
+                        scope.launch {
+                            runCatching {
+                                withContext(Dispatchers.IO) {
+                                    DebugDummyDataInjection.seed(sessionRepository, mediaStorage)
+                                }
+                            }.onSuccess { result ->
+                                debugDummyMessage = "더미 세션 ${result.sessionCount}개를 추가했어요."
+                                currentDestination = AppDestination.Gallery
+                            }.onFailure {
+                                debugDummyMessage = "더미 데이터를 추가하지 못했어요."
+                            }
+                        }
+                    }
+                ) {
+                    Text(text = "더미 데이터 추가")
+                }
             }
         }
 

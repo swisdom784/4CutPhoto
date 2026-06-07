@@ -8,6 +8,7 @@ import com.fourcut.photo.data.local.session.MediaType
 import com.fourcut.photo.data.repository.SaveMediaInput
 import com.fourcut.photo.data.repository.SessionRepository
 import com.fourcut.photo.data.repository.TagRepository
+import com.fourcut.photo.debug.buildDummySessionSeedPlan
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -117,6 +118,31 @@ class SessionRepositoryTest {
         assertEquals(2, second.session.sessionIndexForDay)
         assertEquals(listOf(MediaType.IMAGE, MediaType.VIDEO), first.media.map { it.type })
         assertEquals(listOf(MediaType.IMAGE, MediaType.VIDEO), second.media.map { it.type })
+    }
+
+    @Test
+    fun dummySeedPlanSavesSeparateSameDaySessionsWithMediaAndTags() = runTest {
+        val capturedAt = 1_800_000L
+        val sessionIds = buildDummySessionSeedPlan(seedId = 123L).map { dummy ->
+            sessionRepository.saveSession(
+                capturedAt = capturedAt,
+                sourceQrUrl = dummy.sourceQrUrl,
+                sourceHost = dummy.sourceHost,
+                sourceLabel = dummy.sourceLabel,
+                media = dummy.media,
+                tagNames = dummy.tagNames
+            )
+        }
+
+        val saved = sessionIds.map { db.sessionDao().getSessionWithDetails(it) }
+
+        assertEquals(listOf(1, 2, 3), saved.map { it.session.sessionIndexForDay })
+        saved.forEach { session ->
+            assertEquals(listOf(MediaType.IMAGE, MediaType.VIDEO), session.media.map { it.type })
+        }
+        assertEquals(listOf("친구A", "친구B"), saved[0].tags.map { it.name }.sorted())
+        assertEquals(listOf("혼자"), saved[1].tags.map { it.name })
+        assertEquals(emptyList<String>(), saved[2].tags.map { it.name })
     }
 
     @Test
