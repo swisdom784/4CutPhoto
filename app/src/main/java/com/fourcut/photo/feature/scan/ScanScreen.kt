@@ -2,8 +2,11 @@ package com.fourcut.photo.feature.scan
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.view.MotionEvent
+import androidx.camera.core.Camera
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.FocusMeteringAction
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
@@ -19,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,7 +56,9 @@ import com.fourcut.photo.core.designsystem.component.QuietStateKind
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import kotlinx.coroutines.delay
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun ScanScreen(
@@ -93,6 +99,7 @@ fun ScanScreen(
                         QrScanResult.Ignored -> Unit
                     }
                 },
+                focusPolicy = remember { ScanFocusPolicy() },
                 modifier = Modifier.fillMaxSize()
             )
             ScanFrameOverlay(modifier = Modifier.fillMaxSize())
@@ -124,13 +131,15 @@ private fun ScanFrameOverlay(modifier: Modifier = Modifier) {
         val scanSize = if (maxWidth < 340.dp) maxWidth - 48.dp else 292.dp
         val frameColor = MaterialTheme.colorScheme.surfaceVariant
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val frameSizePx = scanSize.toPx()
-            val left = (size.width - frameSizePx) / 2f
-            val top = (size.height - frameSizePx) / 2f
+            val frame = calculateScanFrame(
+                containerWidthPx = size.width,
+                containerHeightPx = size.height,
+                density = density
+            )
             val cornerRadius = 18.dp.toPx()
             val frameRect = Rect(
-                offset = Offset(left, top),
-                size = Size(frameSizePx, frameSizePx)
+                offset = Offset(frame.left, frame.top),
+                size = Size(frame.size, frame.size)
             )
             val overlayPath = Path().apply {
                 addRect(Rect(Offset.Zero, size))
@@ -161,11 +170,20 @@ private fun ScanFrameOverlay(modifier: Modifier = Modifier) {
             color = Color.White
         )
         Text(
-            text = "QR을 인식해주세요",
+            text = "QR을 사각형 안에 맞추고 잠시 멈춰주세요.",
             modifier = Modifier
                 .align(Alignment.Center)
                 .padding(bottom = scanSize + 40.dp),
             style = MaterialTheme.typography.bodyMedium,
+            color = Color.White,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "초점이 맞지 않으면 화면을 한 번 눌러주세요.",
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(top = scanSize + 36.dp),
+            style = MaterialTheme.typography.bodySmall,
             color = Color.White,
             textAlign = TextAlign.Center
         )
@@ -202,18 +220,64 @@ private fun ScanMessageCard(
 @Composable
 private fun CameraPreview(
     onScanResult: (QrScanResult) -> Unit,
+    focusPolicy: ScanFocusPolicy,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    val scanner = remember { BarcodeScanning.getClient() }
     var isProcessing by remember { mutableStateOf(false) }
     var lastAcceptedValue by remember { mutableStateOf<String?>(null) }
+    var previewView by remember { mutableStateOf<PreviewView?>(null) }
+    var camera by remember { mutableStateOf<Camera?>(null) }
+    var lastFocusRequestMillis by remember { mutableStateOf<Long?>(null) }
+    var manualFocusTarget by remember { mutableStateOf<FocusTarget?>(null) }
 
     DisposableEffect(Unit) {
         onDispose {
+            scanner.close()
             cameraExecutor.shutdown()
         }
+    }
+
+    LaunchedEffect(previewView, camera, isProcessing) {
+        val boundPreviewView = previewView ?: return@LaunchedEffect
+        val boundCamera = camera ?: return@LaunchedEffect
+        delay(350L)
+        while (!isProcessing) {
+            val frame = calculateScanFrame(
+                containerWidthPx = boundPreviewView.width.toFloat(),
+                containerHeightPx = boundPreviewView.height.toFloat(),
+                density = context.resources.displayMetrics.density
+            )
+            val now = System.currentTimeMillis()
+            if (focusPolicy.shouldRequestAutoFocus(now, lastFocusRequestMillis, isProcessing)) {
+                requestFocusAndMetering(
+                    previewView = boundPreviewView,
+                    camera = boundCamera,
+                    target = frame.center
+                )
+                lastFocusRequestMillis = now
+            }
+            delay(400L)
+        }
+    }
+
+    LaunchedEffect(manualFocusTarget, previewView, camera, isProcessing) {
+        val requestedTarget = manualFocusTarget ?: return@LaunchedEffect
+        val boundPreviewView = previewView ?: return@LaunchedEffect
+        val boundCamera = camera ?: return@LaunchedEffect
+        val now = System.currentTimeMillis()
+        if (focusPolicy.canRequestManualFocus(now, lastFocusRequestMillis, isProcessing)) {
+            requestFocusAndMetering(
+                previewView = boundPreviewView,
+                camera = boundCamera,
+                target = requestedTarget
+            )
+            lastFocusRequestMillis = now
+        }
+        manualFocusTarget = null
     }
 
     AndroidView(
@@ -221,17 +285,23 @@ private fun CameraPreview(
         factory = { viewContext ->
             PreviewView(viewContext).apply {
                 scaleType = PreviewView.ScaleType.FILL_CENTER
+                previewView = this
+                setOnTouchListener { _, event ->
+                    if (event.actionMasked == MotionEvent.ACTION_UP) {
+                        manualFocusTarget = FocusTarget(event.x, event.y)
+                    }
+                    true
+                }
             }
         },
-        update = { previewView ->
+        update = { currentPreviewView ->
             val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
             cameraProviderFuture.addListener(
                 {
                     val cameraProvider = cameraProviderFuture.get()
                     val preview = Preview.Builder().build().also {
-                        it.setSurfaceProvider(previewView.surfaceProvider)
+                        it.setSurfaceProvider(currentPreviewView.surfaceProvider)
                     }
-                    val scanner = BarcodeScanning.getClient()
                     val analysis = ImageAnalysis.Builder()
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build()
@@ -275,7 +345,7 @@ private fun CameraPreview(
                     }
 
                     cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(
+                    camera = cameraProvider.bindToLifecycle(
                         lifecycleOwner,
                         CameraSelector.DEFAULT_BACK_CAMERA,
                         preview,
@@ -286,4 +356,21 @@ private fun CameraPreview(
             )
         }
     )
+}
+
+private fun requestFocusAndMetering(
+    previewView: PreviewView,
+    camera: Camera,
+    target: FocusTarget
+) {
+    val point = previewView.meteringPointFactory.createPoint(target.x, target.y)
+    val action = FocusMeteringAction.Builder(
+        point,
+        FocusMeteringAction.FLAG_AF or
+            FocusMeteringAction.FLAG_AE or
+            FocusMeteringAction.FLAG_AWB
+    )
+        .setAutoCancelDuration(3, TimeUnit.SECONDS)
+        .build()
+    camera.cameraControl.startFocusAndMetering(action)
 }
