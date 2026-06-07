@@ -35,6 +35,7 @@ import com.fourcut.photo.feature.gallery.GalleryScreen
 import com.fourcut.photo.feature.gallery.GallerySessionUiModel
 import com.fourcut.photo.feature.gallery.GalleryGroupingInput
 import com.fourcut.photo.feature.gallery.buildGalleryDateGroups
+import com.fourcut.photo.feature.gallery.gallerySessionMatchesTagQuery
 import com.fourcut.photo.feature.scan.ScanScreen
 import com.fourcut.photo.feature.session.SessionDetailMediaUiModel
 import com.fourcut.photo.feature.session.SessionDetailScreen
@@ -197,8 +198,10 @@ fun FourCutPhotoApp() {
                     availableTagNames = sessions.flatMap { session -> session.tags.map { it.name } },
                     groups = sessions
                         .filter { session ->
-                            galleryQuery.isBlank() ||
-                                session.tags.any { it.name.contains(galleryQuery, ignoreCase = true) }
+                            gallerySessionMatchesTagQuery(
+                                tagNames = session.tags.map { it.name },
+                                query = galleryQuery
+                            )
                         }
                         .toGalleryGroups(),
                     onOpenScan = { currentDestination = AppDestination.Scan },

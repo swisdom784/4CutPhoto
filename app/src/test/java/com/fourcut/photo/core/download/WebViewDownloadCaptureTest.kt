@@ -24,9 +24,21 @@ class WebViewDownloadCaptureTest {
     }
 
     @Test
+    fun videoMimeTypeCreatesDownloadableMediaWhenFilenameIsMissing() {
+        val media = captureWebViewDownload(
+            url = "https://example.com/download/video",
+            contentDisposition = null,
+            mimeType = "video/mp4"
+        )
+
+        assertEquals("video/mp4", media?.mimeType)
+        assertEquals("download.mp4", media?.suggestedFileName)
+    }
+
+    @Test
     fun missingMimeTypeFallsBackToUrlExtension() {
         val media = captureWebViewDownload(
-            url = "https://example.com/video_001.mp4?token=abc",
+            url = "https://example.com/video_001.mp4?download=sample",
             contentDisposition = null,
             mimeType = null
         )
@@ -41,6 +53,28 @@ class WebViewDownloadCaptureTest {
             url = "https://example.com/receipt.pdf",
             contentDisposition = "attachment; filename=\"receipt.pdf\"",
             mimeType = "application/pdf"
+        )
+
+        assertNull(media)
+    }
+
+    @Test
+    fun unknownMimeTypeReturnsNullEvenWhenUrlLooksDownloadable() {
+        val media = captureWebViewDownload(
+            url = "https://example.com/download?id=media",
+            contentDisposition = "attachment; filename=\"media.bin\"",
+            mimeType = "application/octet-stream"
+        )
+
+        assertNull(media)
+    }
+
+    @Test
+    fun blobUrlDownloadReturnsNullEvenWithMediaMimeType() {
+        val media = captureWebViewDownload(
+            url = "blob:https://sample.invalid/generated-video",
+            contentDisposition = "attachment; filename=\"clip.mp4\"",
+            mimeType = "video/mp4"
         )
 
         assertNull(media)
