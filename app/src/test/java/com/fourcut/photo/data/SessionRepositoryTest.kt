@@ -84,6 +84,42 @@ class SessionRepositoryTest {
     }
 
     @Test
+    fun sameDayMultipleQrSessionsStaySeparateAndCanContainMultipleMedia() = runTest {
+        val firstId = sessionRepository.saveSession(
+            capturedAt = 1_000L,
+            sourceQrUrl = "https://sample.invalid/qr/first",
+            sourceHost = "sample.invalid",
+            sourceLabel = "Sample Booth",
+            media = listOf(
+                SaveMediaInput(MediaType.IMAGE, "path/first-photo.jpg", "image/jpeg", "first-photo.jpg"),
+                SaveMediaInput(MediaType.VIDEO, "path/first-video.mp4", "video/mp4", "first-video.mp4")
+            ),
+            tagNames = listOf("하진")
+        )
+        val secondId = sessionRepository.saveSession(
+            capturedAt = 2_000L,
+            sourceQrUrl = "https://sample.invalid/qr/second",
+            sourceHost = "sample.invalid",
+            sourceLabel = "Sample Booth",
+            media = listOf(
+                SaveMediaInput(MediaType.IMAGE, "path/second-photo.jpg", "image/jpeg", "second-photo.jpg"),
+                SaveMediaInput(MediaType.VIDEO, "path/second-video.mp4", "video/mp4", "second-video.mp4")
+            ),
+            tagNames = listOf("정현")
+        )
+
+        val first = db.sessionDao().getSessionWithDetails(firstId)
+        val second = db.sessionDao().getSessionWithDetails(secondId)
+        val sessionsForDay = db.sessionDao().getSessionsForDay(0L, 86_400_000L)
+
+        assertEquals(listOf(firstId, secondId), sessionsForDay.map { it.id })
+        assertEquals(1, first.session.sessionIndexForDay)
+        assertEquals(2, second.session.sessionIndexForDay)
+        assertEquals(listOf(MediaType.IMAGE, MediaType.VIDEO), first.media.map { it.type })
+        assertEquals(listOf(MediaType.IMAGE, MediaType.VIDEO), second.media.map { it.type })
+    }
+
+    @Test
     fun saveSessionCanPersistMediaAfterSessionIdIsCreated() = runTest {
         val sessionId = sessionRepository.saveSession(
             capturedAt = 300L,

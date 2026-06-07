@@ -4,6 +4,7 @@ internal sealed interface WebViewCaptureStatus {
     data object Waiting : WebViewCaptureStatus
     data class Captured(val itemCount: Int) : WebViewCaptureStatus
     data object IgnoredUnsupported : WebViewCaptureStatus
+    data object EmptyCaptured : WebViewCaptureStatus
 }
 
 internal fun webViewCaptureStatusMessage(status: WebViewCaptureStatus): String {
@@ -12,6 +13,7 @@ internal fun webViewCaptureStatusMessage(status: WebViewCaptureStatus): String {
         is WebViewCaptureStatus.Captured -> {
             "${status.itemCount}개 항목을 담았어요. 더 선택하거나 세션을 검토해주세요."
         }
-        WebViewCaptureStatus.IgnoredUnsupported -> "사진이나 영상 파일이 아닌 다운로드예요."
+        WebViewCaptureStatus.IgnoredUnsupported -> "앱에서 바로 저장할 수 없는 방식이에요. 원본 페이지에서 다른 다운로드 버튼을 시도해주세요."
+        WebViewCaptureStatus.EmptyCaptured -> "아직 담은 사진이나 영상이 없어요."
     }
 }

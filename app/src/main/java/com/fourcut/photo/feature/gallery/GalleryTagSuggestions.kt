@@ -27,3 +27,15 @@ fun galleryTagFilterAfterClick(
         tagName
     }
 }
+
+fun gallerySessionMatchesTagQuery(
+    tagNames: List<String>,
+    query: String
+): Boolean {
+    val normalizedQuery = query.trim()
+    if (normalizedQuery.isBlank()) return true
+
+    return tagNames.any { tagName ->
+        tagName.contains(normalizedQuery, ignoreCase = true)
+    }
+}

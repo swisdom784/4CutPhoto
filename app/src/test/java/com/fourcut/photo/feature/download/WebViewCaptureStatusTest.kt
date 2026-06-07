@@ -22,6 +22,13 @@ class WebViewCaptureStatusTest {
     fun ignoredStatusExplainsUnsupportedDownload() {
         val message = webViewCaptureStatusMessage(WebViewCaptureStatus.IgnoredUnsupported)
 
-        assertEquals("사진이나 영상 파일이 아닌 다운로드예요.", message)
+        assertEquals("앱에서 바로 저장할 수 없는 방식이에요. 원본 페이지에서 다른 다운로드 버튼을 시도해주세요.", message)
+    }
+
+    @Test
+    fun emptyCapturedStatusExplainsNoMediaItems() {
+        val message = webViewCaptureStatusMessage(WebViewCaptureStatus.EmptyCaptured)
+
+        assertEquals("아직 담은 사진이나 영상이 없어요.", message)
     }
 }

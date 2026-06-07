@@ -5,6 +5,10 @@ fun captureWebViewDownload(
     contentDisposition: String?,
     mimeType: String?
 ): DownloadableMedia? {
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        return null
+    }
+
     val normalizedMimeType = mimeType
         ?.trim()
         ?.takeIf { it.isNotBlank() }

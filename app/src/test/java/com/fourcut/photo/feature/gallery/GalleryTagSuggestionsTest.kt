@@ -53,4 +53,54 @@ class GalleryTagSuggestionsTest {
 
         assertEquals("", nextQuery)
     }
+
+    @Test
+    fun blankTagQueryMatchesSessionWithoutTags() {
+        val matches = gallerySessionMatchesTagQuery(
+            tagNames = emptyList(),
+            query = ""
+        )
+
+        assertEquals(true, matches)
+    }
+
+    @Test
+    fun singleTagQueryMatchesSessionTag() {
+        val matches = gallerySessionMatchesTagQuery(
+            tagNames = listOf("하진"),
+            query = "하진"
+        )
+
+        assertEquals(true, matches)
+    }
+
+    @Test
+    fun partialTagQueryMatchesOneOfMultipleTags() {
+        val matches = gallerySessionMatchesTagQuery(
+            tagNames = listOf("하진", "정현"),
+            query = "정"
+        )
+
+        assertEquals(true, matches)
+    }
+
+    @Test
+    fun nonexistentTagQueryDoesNotMatchSession() {
+        val matches = gallerySessionMatchesTagQuery(
+            tagNames = listOf("하진", "정현"),
+            query = "민지"
+        )
+
+        assertEquals(false, matches)
+    }
+
+    @Test
+    fun deletedTagNoLongerMatchesWhenSessionTagsAreUpdated() {
+        val matches = gallerySessionMatchesTagQuery(
+            tagNames = listOf("정현"),
+            query = "하진"
+        )
+
+        assertEquals(false, matches)
+    }
 }

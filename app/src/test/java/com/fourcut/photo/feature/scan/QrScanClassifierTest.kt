@@ -5,7 +5,7 @@ import org.junit.Test
 
 class QrScanClassifierTest {
     @Test
-    fun httpUrlIsAccepted() {
+    fun httpsUrlIsAccepted() {
         val result = classifyQrScan(
             rawValue = "https://example.com/photo",
             lastAcceptedValue = null,
@@ -13,6 +13,17 @@ class QrScanClassifierTest {
         )
 
         assertEquals(QrScanResult.AcceptedUrl("https://example.com/photo"), result)
+    }
+
+    @Test
+    fun httpUrlIsAccepted() {
+        val result = classifyQrScan(
+            rawValue = "http://example.com/photo",
+            lastAcceptedValue = null,
+            isProcessing = false
+        )
+
+        assertEquals(QrScanResult.AcceptedUrl("http://example.com/photo"), result)
     }
 
     @Test
@@ -24,6 +35,17 @@ class QrScanClassifierTest {
         )
 
         assertEquals(QrScanResult.Unsupported("hello"), result)
+    }
+
+    @Test
+    fun specialCharacterQrIsUnsupportedWhenItIsNotUrl() {
+        val result = classifyQrScan(
+            rawValue = "###not-a-url###",
+            lastAcceptedValue = null,
+            isProcessing = false
+        )
+
+        assertEquals(QrScanResult.Unsupported("###not-a-url###"), result)
     }
 
     @Test
