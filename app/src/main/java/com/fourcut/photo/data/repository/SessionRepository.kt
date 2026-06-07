@@ -69,7 +69,7 @@ class SessionRepository(
 
         val mediaIds = media.map { input ->
             val persistedInput = persistMedia(sessionId, input)
-            sessionDao.insertMedia(
+            val mediaId = sessionDao.insertMedia(
                 MediaItemEntity(
                     sessionId = sessionId,
                     type = persistedInput.type,
@@ -82,11 +82,14 @@ class SessionRepository(
                     createdAt = now
                 )
             )
+            persistedInput.type to mediaId
         }
 
         if (mediaIds.isNotEmpty()) {
             val saved = sessionDao.getSessionWithDetails(sessionId).session
-            sessionDao.updateSession(saved.copy(coverMediaId = mediaIds.first(), updatedAt = now))
+            val coverMediaId = mediaIds.firstOrNull { it.first == MediaType.IMAGE }?.second
+                ?: mediaIds.first().second
+            sessionDao.updateSession(saved.copy(coverMediaId = coverMediaId, updatedAt = now))
         }
 
         tagNames.asSequence()

@@ -22,7 +22,7 @@ class WebViewCaptureStatusTest {
     fun ignoredStatusExplainsUnsupportedDownload() {
         val message = webViewCaptureStatusMessage(WebViewCaptureStatus.IgnoredUnsupported)
 
-        assertEquals("앱에서 바로 저장할 수 없는 방식이에요. 원본 페이지에서 다른 다운로드 버튼을 시도해주세요.", message)
+        assertEquals("앱에서 바로 저장할 수 없는 다운로드 방식이에요. 원본 페이지에서 다시 시도하거나 외부 브라우저로 열어보세요.", message)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.fourcut.photo.feature.session
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,11 +31,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.fourcut.photo.core.designsystem.component.PersonTagMiniPanel
 import com.fourcut.photo.core.tag.addSelectedTag
 import com.fourcut.photo.core.tag.removeSelectedTag
 import coil.compose.AsyncImage
+import com.fourcut.photo.feature.download.VideoThumbnailStore
+import com.fourcut.photo.feature.download.buildVideoThumbnailDisplayState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class SessionDetailMediaUiModel(
     val path: String,
@@ -65,9 +71,12 @@ fun SessionDetailScreen(
     onDeleteSession: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val thumbnailStore = remember(context) { VideoThumbnailStore(context) }
     var isEditingTags by remember { mutableStateOf(false) }
     var tagQuery by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var viewerState by remember { mutableStateOf<SessionMediaViewerState?>(null) }
     val editingTags = remember { mutableStateListOf<String>() }
 
     LaunchedEffect(tagNames) {
@@ -180,7 +189,11 @@ fun SessionDetailScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(media) { item ->
-                MediaTile(item)
+                MediaTile(
+                    media = item,
+                    thumbnailStore = thumbnailStore,
+                    onClick = { viewerState = openSessionMediaViewer(viewerState, item) }
+                )
             }
         }
     }
@@ -207,6 +220,14 @@ fun SessionDetailScreen(
             }
         )
     }
+
+    viewerState?.let { state ->
+        MediaViewerDialog(
+            state = state,
+            thumbnailStore = thumbnailStore,
+            onDismiss = { viewerState = closeSessionMediaViewer(viewerState) }
+        )
+    }
 }
 
 private fun MutableList<String>.replaceWith(tags: List<String>) {
@@ -215,16 +236,50 @@ private fun MutableList<String>.replaceWith(tags: List<String>) {
 }
 
 @Composable
-private fun MediaTile(media: SessionDetailMediaUiModel) {
+private fun MediaTile(
+    media: SessionDetailMediaUiModel,
+    thumbnailStore: VideoThumbnailStore,
+    onClick: () -> Unit
+) {
+    var thumbnailPath by remember(media.path) { mutableStateOf<String?>(null) }
+    val videoState = buildVideoThumbnailDisplayState(
+        source = media.path,
+        mimeType = media.mimeType,
+        thumbnailPath = thumbnailPath
+    )
+    LaunchedEffect(media.path, media.mimeType) {
+        if (videoState.shouldGenerateThumbnail) {
+            thumbnailPath = withContext(Dispatchers.IO) {
+                thumbnailStore.getOrCreateThumbnail(media.path)
+            }
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(0.72f)
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        if (media.isVideo) {
+        if (media.isVideo && videoState.showThumbnailImage) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = videoState.imageModel,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Text(
+                    text = "영상",
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        } else if (media.isVideo) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -252,4 +307,88 @@ private fun MediaTile(media: SessionDetailMediaUiModel) {
             )
         }
     }
+}
+
+@Composable
+private fun MediaViewerDialog(
+    state: SessionMediaViewerState,
+    thumbnailStore: VideoThumbnailStore,
+    onDismiss: () -> Unit
+) {
+    var thumbnailPath by remember(state.media.path) { mutableStateOf<String?>(null) }
+    val videoState = buildVideoThumbnailDisplayState(
+        source = state.media.path,
+        mimeType = state.media.mimeType,
+        thumbnailPath = thumbnailPath
+    )
+    LaunchedEffect(state.media.path, state.media.mimeType) {
+        if (videoState.shouldGenerateThumbnail) {
+            thumbnailPath = withContext(Dispatchers.IO) {
+                thumbnailStore.getOrCreateThumbnail(state.media.path)
+            }
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(state.media.displayName) },
+        text = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(if (state.type == SessionMediaViewerType.Video) 1.2f else 0.72f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                if (state.type == SessionMediaViewerType.Image &&
+                    (state.media.path.startsWith("http://") ||
+                        state.media.path.startsWith("https://") ||
+                        state.media.path.startsWith("/") ||
+                        state.media.path.startsWith("content://"))
+                ) {
+                    AsyncImage(
+                        model = state.media.path,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else if (state.type == SessionMediaViewerType.Video && videoState.showThumbnailImage) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AsyncImage(
+                            model = videoState.imageModel,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = "영상 미리보기",
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(12.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = if (state.type == SessionMediaViewerType.Video) "영상" else "이미지",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Text(
+                            text = state.media.mimeType,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("닫기")
+            }
+        }
+    )
 }
