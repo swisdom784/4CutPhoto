@@ -22,6 +22,6 @@ class WebViewPageStatusTest {
     fun failedStatusShowsRetryGuidance() {
         val message = webViewPageStatusMessage(WebViewPageStatus.Failed)
 
-        assertEquals("페이지를 열지 못했어요. 네트워크 상태를 확인한 뒤 다시 시도해주세요.", message)
+        assertEquals("페이지를 불러오지 못했어요. 네트워크 상태를 확인하거나 외부 브라우저로 열어보세요.", message)
     }
 }

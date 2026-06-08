@@ -22,14 +22,24 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.fourcut.photo.core.designsystem.component.QuietStateCard
 import com.fourcut.photo.core.designsystem.component.QuietStateKind
+import com.fourcut.photo.feature.download.VideoThumbnailStore
+import com.fourcut.photo.feature.download.buildVideoThumbnailDisplayState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class GalleryDateGroupUiModel(
     val yearLabel: String,
@@ -49,6 +59,7 @@ data class GallerySessionUiModel(
     val coverMimeType: String? = null
 ) {
     val hasImageCover: Boolean = !coverPath.isNullOrBlank() && coverMimeType?.startsWith("image/") == true
+    val hasVideoCover: Boolean = !coverPath.isNullOrBlank() && coverMimeType?.startsWith("video/") == true
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -62,6 +73,8 @@ fun GalleryScreen(
     onSessionSelected: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val thumbnailStore = remember(context) { VideoThumbnailStore(context) }
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -152,6 +165,7 @@ fun GalleryScreen(
             ) { session ->
                 GallerySessionCard(
                     session = session,
+                    thumbnailStore = thumbnailStore,
                     onClick = { onSessionSelected(session.id) }
                 )
             }
@@ -176,8 +190,23 @@ private fun GalleryEmptyStateCard(
 @Composable
 private fun GallerySessionCard(
     session: GallerySessionUiModel,
+    thumbnailStore: VideoThumbnailStore,
     onClick: () -> Unit
 ) {
+    var thumbnailPath by remember(session.coverPath) { mutableStateOf<String?>(null) }
+    val videoState = buildVideoThumbnailDisplayState(
+        source = session.coverPath.orEmpty(),
+        mimeType = session.coverMimeType.orEmpty(),
+        thumbnailPath = thumbnailPath
+    )
+    LaunchedEffect(session.coverPath, session.coverMimeType) {
+        val coverPath = session.coverPath
+        if (videoState.shouldGenerateThumbnail && coverPath != null) {
+            thumbnailPath = withContext(Dispatchers.IO) {
+                thumbnailStore.getOrCreateThumbnail(coverPath)
+            }
+        }
+    }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -207,6 +236,22 @@ private fun GallerySessionCard(
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize()
                     )
+                } else if (session.hasVideoCover && videoState.showThumbnailImage) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AsyncImage(
+                            model = videoState.imageModel,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = "영상",
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(8.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                 } else {
                     Text(
                         text = if (session.hasVideo) "영상" else "사진",

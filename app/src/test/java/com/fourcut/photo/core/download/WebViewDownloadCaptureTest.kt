@@ -79,4 +79,26 @@ class WebViewDownloadCaptureTest {
 
         assertNull(media)
     }
+
+    @Test
+    fun dataUrlDownloadReturnsNullEvenWithMediaMimeType() {
+        val media = captureWebViewDownload(
+            url = "data:video/mp4;base64,AAAA",
+            contentDisposition = "attachment; filename=\"clip.mp4\"",
+            mimeType = "video/mp4"
+        )
+
+        assertNull(media)
+    }
+
+    @Test
+    fun javascriptUrlDownloadReturnsNullEvenWithMediaMimeType() {
+        val media = captureWebViewDownload(
+            url = "javascript:downloadMedia()",
+            contentDisposition = "attachment; filename=\"clip.mp4\"",
+            mimeType = "video/mp4"
+        )
+
+        assertNull(media)
+    }
 }

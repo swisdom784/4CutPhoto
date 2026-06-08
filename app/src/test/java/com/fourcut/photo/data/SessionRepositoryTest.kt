@@ -165,6 +165,45 @@ class SessionRepositoryTest {
     }
 
     @Test
+    fun saveSessionUsesImageAsCoverWhenImageAndVideoAreSaved() = runTest {
+        val sessionId = sessionRepository.saveSession(
+            capturedAt = 350L,
+            sourceQrUrl = "https://example.com/qr",
+            sourceHost = "example.com",
+            sourceLabel = "Example Booth",
+            media = listOf(
+                SaveMediaInput(MediaType.VIDEO, "content://sample.invalid/video/1", "video/mp4", "video.mp4"),
+                SaveMediaInput(MediaType.IMAGE, "content://sample.invalid/photo/1", "image/jpeg", "photo.jpg")
+            ),
+            tagNames = emptyList()
+        )
+
+        val saved = db.sessionDao().getSessionWithDetails(sessionId)
+        val cover = saved.media.first { it.id == saved.session.coverMediaId }
+
+        assertEquals(MediaType.IMAGE, cover.type)
+    }
+
+    @Test
+    fun saveSessionUsesVideoAsCoverWhenOnlyVideoIsSaved() = runTest {
+        val sessionId = sessionRepository.saveSession(
+            capturedAt = 360L,
+            sourceQrUrl = "https://example.com/qr",
+            sourceHost = "example.com",
+            sourceLabel = "Example Booth",
+            media = listOf(
+                SaveMediaInput(MediaType.VIDEO, "content://sample.invalid/video/1", "video/mp4", "video.mp4")
+            ),
+            tagNames = emptyList()
+        )
+
+        val saved = db.sessionDao().getSessionWithDetails(sessionId)
+        val cover = saved.media.first { it.id == saved.session.coverMediaId }
+
+        assertEquals(MediaType.VIDEO, cover.type)
+    }
+
+    @Test
     fun replaceSessionTagsRemovesOldTagsAndAppliesNewTags() = runTest {
         val sessionId = sessionRepository.saveSession(
             capturedAt = 400L,
